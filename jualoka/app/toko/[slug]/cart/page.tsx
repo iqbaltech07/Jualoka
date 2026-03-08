@@ -20,9 +20,11 @@ export default function CartPage() {
     const [form, setForm] = useState({ name: "", whatsapp: "" })
 
     const update = (id: string, delta: number) =>
-        setItems((prev) =>
-            prev.map((it) => it.id === id ? { ...it, quantity: Math.max(1, it.quantity + delta) } : it)
-        )
+    setItems((prev) =>
+        prev
+            .map((it) => it.id === id ? { ...it, quantity: it.quantity + delta } : it)
+            .filter((it) => it.quantity > 0)
+    )
 
     const remove = (id: string) => setItems((prev) => prev.filter((it) => it.id !== id))
 
