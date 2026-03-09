@@ -39,7 +39,7 @@ export function StoreToggleCard({ initialOpen }: { initialOpen: boolean }) {
                     <p className="text-xs text-muted-foreground mt-0.5">
                         {isOpen
                             ? "Pelanggan bisa melihat & memesan produk Anda."
-                            : "Toko tersembunyi — pelanggan melihat pesan tutup."}
+                            : "Toko tersembunyi, pelanggan melihat pesan tutup."}
                     </p>
                 </div>
             </div>
