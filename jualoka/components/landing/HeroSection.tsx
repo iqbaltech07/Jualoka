@@ -62,7 +62,7 @@ export default function HeroSection() {
                 {/* CTA Buttons */}
                 <div className="flex flex-col sm:flex-row items-center justify-center gap-3 mb-14">
                     <Link
-                        href="/admin"
+                        href="/auth/register"
                         className="w-full sm:w-auto inline-flex items-center justify-center gap-2 bg-primary text-white font-bold px-7 py-3.5 rounded-2xl hover:bg-primary/90 transition-all shadow-lg shadow-primary/25 hover:shadow-xl hover:shadow-primary/30 active:scale-95 text-base"
                     >
                         Buat Toko Sekarang

@@ -37,13 +37,13 @@ export default function Navbar() {
                 {/* CTAs */}
                 <div className="flex items-center gap-3">
                     <Link
-                        href="/admin"
+                        href="/auth/login"
                         className="hidden sm:inline-flex text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
                     >
                         Masuk
                     </Link>
                     <Link
-                        href="/admin"
+                        href="/auth/register"
                         className="inline-flex items-center gap-1.5 bg-primary text-white text-sm font-semibold px-4 py-2 rounded-xl hover:bg-primary/90 transition-all shadow-sm hover:shadow-md active:scale-95"
                     >
                         Mulai Gratis

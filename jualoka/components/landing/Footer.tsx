@@ -1,5 +1,5 @@
 import Link from "next/link"
-import { Store } from "lucide-react"
+import Image from "next/image"
 
 const NAV_LINKS = [
     { href: "#fitur", label: "Fitur" },
@@ -14,10 +14,16 @@ export default function Footer() {
             <div className="max-w-6xl mx-auto px-5">
                 <div className="flex flex-col md:flex-row items-center justify-between gap-6">
                     {/* Logo */}
+
+
                     <div className="flex items-center gap-2.5">
-                        <div className="h-8 w-8 rounded-xl bg-primary flex items-center justify-center">
-                            <Store className="h-4 w-4 text-white" />
-                        </div>
+                        <Image
+                            src="/logo.svg"
+                            alt="Jualoka Logo"
+                            width={32}
+                            height={32}
+                            className="rounded-xl"
+                        />
                         <span className="font-bold text-lg text-white">Jualoka</span>
                     </div>
 

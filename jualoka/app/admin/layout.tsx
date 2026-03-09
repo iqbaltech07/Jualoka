@@ -1,9 +1,11 @@
 "use client"
 
 import Link from "next/link"
-import { usePathname } from "next/navigation"
-import { Package, LayoutDashboard, ShoppingCart, Settings, Store, ChevronRight } from "lucide-react"
+import { usePathname, useRouter } from "next/navigation"
+import { Package, LayoutDashboard, ShoppingCart, Settings, Store, ChevronRight, LogOut } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { useEffect, useState } from "react"
+import { getAuthUser, clearAuthUser, type AuthUser } from "@/components/localStorage/AuthStorage"
 
 const navLinks = [
     { href: "/admin", label: "Dashboard", icon: LayoutDashboard },
@@ -40,6 +42,46 @@ function SidebarNav() {
     )
 }
 
+function AdminUserFooter() {
+    const router = useRouter()
+    const [user, setUser] = useState<AuthUser | null>(null)
+
+    useEffect(() => {
+        setUser(getAuthUser())
+    }, [])
+
+    function handleLogout() {
+        clearAuthUser()
+        router.push("/auth/login")
+    }
+
+    const initials = user?.name
+        ? user.name.split(" ").map((w) => w[0]).slice(0, 2).join("").toUpperCase()
+        : "A"
+
+    return (
+        <div className="p-4 border-t border-white/10">
+            <div className="flex items-center gap-3 rounded-xl px-3 py-2 bg-white/10">
+                <div className="h-8 w-8 rounded-full bg-[#fac023] flex items-center justify-center text-[#1a1a1a] font-bold text-sm shrink-0">
+                    {initials}
+                </div>
+                <div className="min-w-0 flex-1">
+                    <p className="text-white text-sm font-medium truncate">{user?.name ?? "Admin"}</p>
+                    <p className="text-white/50 text-xs truncate">{user?.email ?? "Pemilik Toko"}</p>
+                </div>
+                <button
+                    onClick={handleLogout}
+                    title="Keluar"
+                    className="text-white/50 hover:text-white transition-colors shrink-0"
+                    aria-label="Keluar"
+                >
+                    <LogOut className="h-4 w-4" />
+                </button>
+            </div>
+        </div>
+    )
+}
+
 export default function AdminLayout({
     children,
 }: {
@@ -68,17 +110,7 @@ export default function AdminLayout({
                     </div>
 
                     {/* Footer */}
-                    <div className="p-4 border-t border-white/10">
-                        <div className="flex items-center gap-3 rounded-xl px-3 py-2 bg-white/10">
-                            <div className="h-8 w-8 rounded-full bg-[#fac023] flex items-center justify-center text-[#1a1a1a] font-bold text-sm">
-                                A
-                            </div>
-                            <div className="min-w-0">
-                                <p className="text-white text-sm font-medium truncate">Admin</p>
-                                <p className="text-white/50 text-xs truncate">Pemilik Toko</p>
-                            </div>
-                        </div>
-                    </div>
+                    <AdminUserFooter />
                 </div>
             </aside>
 

@@ -37,7 +37,7 @@ export default function CtaSection() {
 
                         <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
                             <Link
-                                href="/admin"
+                                href="/auth/register"
                                 className="w-full sm:w-auto inline-flex items-center justify-center gap-2 bg-white text-primary font-bold px-8 py-3.5 rounded-2xl hover:bg-white/90 transition-all shadow-lg active:scale-95 text-base"
                             >
                                 Buat Toko Gratis

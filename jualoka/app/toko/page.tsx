@@ -13,13 +13,15 @@ import {
     SlidersHorizontal,
     ChevronRight,
     TrendingUp,
+    LayoutGrid,
 } from "lucide-react"
+import { STORE_CATEGORIES, CATEGORY_ICONS, type StoreCategory } from "@/lib/categories"
 
 // --------------------------------------------------------------------------
 // Data
 // --------------------------------------------------------------------------
 
-type Category = "Makanan" | "Minuman" | "Fashion" | "Kerajinan" | "Kecantikan"
+type Category = StoreCategory
 
 type StoreData = {
     id: string
@@ -157,15 +159,11 @@ const STORES: StoreData[] = [
     },
 ]
 
-const CATEGORIES: (Category | "Semua")[] = ["Semua", "Makanan", "Minuman", "Fashion", "Kerajinan", "Kecantikan"]
+const CATEGORIES: (Category | "Semua")[] = ["Semua", ...STORE_CATEGORIES]
 
-const CATEGORY_ICONS: Record<string, string> = {
-    Semua: "🏪",
-    Makanan: "🍜",
-    Minuman: "☕",
-    Fashion: "👗",
-    Kerajinan: "🎨",
-    Kecantikan: "✨",
+const ALL_ICONS: Record<string, React.ElementType> = {
+    Semua: LayoutGrid,
+    ...CATEGORY_ICONS,
 }
 
 // --------------------------------------------------------------------------
@@ -197,7 +195,7 @@ function StoreCard({ store }: { store: StoreData }) {
             <div className="pt-10 px-5 pb-5 flex flex-col flex-1">
                 {/* Category pill */}
                 <span className="self-end text-[10px] font-bold uppercase tracking-wider text-muted-foreground bg-muted px-2 py-0.5 rounded-full -mt-2">
-                    {CATEGORY_ICONS[store.category]} {store.category}
+                    {store.category}
                 </span>
 
                 <h3 className="font-bold text-base leading-tight mt-1 group-hover:text-primary transition-colors">
@@ -336,11 +334,11 @@ export default function StoresPage() {
                                 key={cat}
                                 onClick={() => setActiveCategory(cat)}
                                 className={`shrink-0 flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-semibold transition-all duration-150 ${activeCategory === cat
-                                        ? "bg-primary text-white shadow-sm"
-                                        : "bg-muted text-muted-foreground hover:text-foreground hover:bg-muted/80"
+                                    ? "bg-primary text-white shadow-sm"
+                                    : "bg-muted text-muted-foreground hover:text-foreground hover:bg-muted/80"
                                     }`}
                             >
-                                <span>{CATEGORY_ICONS[cat]}</span>
+                                {(() => { const Icon = ALL_ICONS[cat]; return Icon ? <Icon className="h-3.5 w-3.5" /> : null })()}
                                 {cat}
                             </button>
                         ))}
