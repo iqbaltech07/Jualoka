@@ -63,7 +63,7 @@ export default function HeroSection() {
                 {/* Subtitle */}
                 <MotionWrapper delay={0.2}>
                     <p className="text-base sm:text-lg text-muted-foreground max-w-2xl mx-auto mb-10 leading-relaxed">
-                        Buat toko online, terima pesanan via WhatsApp, dan ketahui produk mana yang benar-benar laku —
+                        Buat toko online, terima pesanan via WhatsApp, dan ketahui produk mana yang benar-benar laku,
                         semuanya dalam satu platform yang mudah digunakan untuk UMKM.
                     </p>
                 </MotionWrapper>
