@@ -1,11 +1,25 @@
 import Link from "next/link"
-import { ArrowUpRight, Zap } from "lucide-react"
+import { ArrowUpRight, Zap, Package, ShoppingBag, Star, Eye, TrendingUp } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { MiniBarChart } from "@/components/admin/MiniBarChart"
-import { salesData } from "@/lib/salesData"
-import { quickActions } from "./dashboardData"
 
-export function SalesChart() {
+const quickActions = [
+    { label: "Tambah Produk", icon: Package, href: "/admin/products", color: "bg-primary text-white" },
+    { label: "Lihat Pesanan", icon: ShoppingBag, href: "/admin/orders", color: "bg-blue-500 text-white" },
+    { label: "Analisis Bisnis", icon: TrendingUp, href: "/admin/analysis", color: "bg-purple-500 text-white" },
+    { label: "Kustomisasi Banner", icon: Star, href: "/admin/settings", color: "bg-amber-500 text-white" },
+    { label: "Lihat Toko", icon: Eye, href: "/admin/settings", color: "bg-emerald-500 text-white" },
+]
+
+export function SalesChart({ data }: {
+    data?: {
+        salesHistory: { day: string; revenue: number; orders: number }[]
+        totalRevenue: number
+    }
+}) {
+    const history = data?.salesHistory || []
+    const total = data?.totalRevenue || 0
+    
     return (
         <div className="grid lg:grid-cols-3 gap-5">
             <Card className="border-0 shadow-sm bg-white lg:col-span-2">
@@ -15,18 +29,18 @@ export function SalesChart() {
                         <p className="text-xs text-muted-foreground mt-0.5">Total pendapatan per hari</p>
                     </div>
                     <div className="text-xs font-bold text-primary bg-primary/10 px-2.5 py-1 rounded-full">
-                        Rp 3.24 jt
+                        Rp {(total / 1000000).toFixed(2)} jt
                     </div>
                 </CardHeader>
                 <CardContent className="px-6 pb-5">
-                    <MiniBarChart />
+                    <MiniBarChart data={history} />
                     <div className="flex justify-between mt-3 text-[10px] text-muted-foreground">
                         <span>Rp 0</span>
-                        <span>Total minggu ini: <strong className="text-foreground">Rp 3.240.000</strong></span>
-                        <span>Rp 720rb</span>
+                        <span>Total 7 hari: <strong className="text-foreground">Rp {total.toLocaleString("id-ID")}</strong></span>
+                        <span>{/* dynamic max could go here */}</span>
                     </div>
                     <div className="grid grid-cols-7 gap-1 mt-4">
-                        {salesData.map((d, i) => (
+                        {history.map((d, i) => (
                             <div key={i} className="text-center">
                                 <p className="text-[10px] font-bold text-muted-foreground">{d.orders}</p>
                                 <p className="text-[9px] text-muted-foreground/60">pesanan</p>

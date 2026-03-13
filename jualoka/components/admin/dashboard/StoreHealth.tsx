@@ -1,9 +1,12 @@
 import Link from "next/link"
 import { CheckCircle2, AlertCircle, ArrowUpRight } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { storeHealth } from "./dashboardData"
 
-export function StoreHealth({ healthScore }: { healthScore: number }) {
+
+export function StoreHealth({ items, score }: { 
+    items: { label: string; ok: boolean }[]
+    score: number 
+}) {
     return (
         <Card className="border-0 shadow-sm bg-white lg:col-span-1">
             <CardHeader className="px-5 pt-5 pb-4">
@@ -17,20 +20,20 @@ export function StoreHealth({ healthScore }: { healthScore: number }) {
                             <circle cx="18" cy="18" r="15" fill="none" strokeWidth="3" className="stroke-muted" />
                             <circle
                                 cx="18" cy="18" r="15" fill="none" strokeWidth="3"
-                                strokeDasharray={`${(healthScore / 100) * 94.2} 94.2`}
+                                strokeDasharray={`${(score / 100) * 94.2} 94.2`}
                                 strokeLinecap="round"
                                 className="stroke-emerald-500 transition-all duration-700"
                             />
                         </svg>
                         <span className="absolute inset-0 flex items-center justify-center text-[11px] font-black text-emerald-600">
-                            {healthScore}%
+                            {score}%
                         </span>
                     </div>
                 </div>
             </CardHeader>
             <CardContent className="px-5 pb-5">
                 <div className="flex flex-col gap-2.5">
-                    {storeHealth.map((item, i) => (
+                    {items.map((item, i) => (
                         <div key={i} className="flex items-center gap-2.5">
                             {item.ok
                                 ? <CheckCircle2 className="h-4 w-4 text-emerald-500 shrink-0" />
@@ -47,7 +50,7 @@ export function StoreHealth({ healthScore }: { healthScore: number }) {
                         </div>
                     ))}
                 </div>
-                {healthScore < 100 && (
+                {score < 100 && (
                     <Link
                         href="/admin/settings"
                         className="mt-4 flex items-center justify-center gap-2 w-full rounded-xl py-2.5 bg-amber-50 hover:bg-amber-100 text-amber-700 text-xs font-semibold transition-colors"

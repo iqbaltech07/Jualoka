@@ -1,10 +1,19 @@
 import Link from "next/link"
 import { ArrowUpRight, MessageCircle } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { recentOrders } from "./dashboardData"
 import { StatusPill } from "./StatusPill"
 
-export function RecentOrders() {
+type RecentOrder = {
+    id: string
+    customerName: string
+    customerWhatsapp: string
+    status: string
+    total: number
+    itemCount: number
+    createdAt: string
+}
+
+export function RecentOrders({ orders }: { orders?: RecentOrder[] }) {
     return (
         <Card className="border-0 shadow-sm bg-white lg:col-span-1">
             <CardHeader className="px-5 pt-5 pb-4 flex flex-row items-center justify-between">
@@ -18,17 +27,19 @@ export function RecentOrders() {
             </CardHeader>
             <CardContent className="px-5 pb-5">
                 <div className="flex flex-col gap-3">
-                    {recentOrders.map((order, i) => (
-                        <div key={i} className="flex items-center gap-3">
+                    {(!orders || orders.length === 0) ? (
+                        <p className="text-xs text-muted-foreground text-center py-4">Belum ada pesanan.</p>
+                    ) : orders.map((order) => (
+                        <div key={order.id} className="flex items-center gap-3">
                             <div className="h-8 w-8 rounded-full bg-gradient-to-br from-primary/70 to-primary flex items-center justify-center text-white font-bold text-xs shrink-0">
-                                {order.name.charAt(0)}
+                                {order.customerName.charAt(0).toUpperCase()}
                             </div>
                             <div className="flex-1 min-w-0">
                                 <div className="flex items-center gap-1.5">
-                                    <p className="text-sm font-medium truncate">{order.name}</p>
+                                    <p className="text-sm font-medium truncate">{order.customerName}</p>
                                     <StatusPill status={order.status} />
                                 </div>
-                                <p className="text-xs text-muted-foreground">{order.time} · {order.items} item</p>
+                                <p className="text-xs text-muted-foreground">{order.itemCount} item</p>
                             </div>
                             <p className="text-sm font-bold text-primary shrink-0">
                                 Rp {(order.total / 1000).toFixed(0)}rb

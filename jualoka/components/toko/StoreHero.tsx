@@ -5,7 +5,6 @@ import {
     Package,
     TrendingUp,
 } from "lucide-react"
-import { STORES } from "./storesData"
 
 export function StoreHero({
     query,
@@ -59,7 +58,7 @@ export function StoreHero({
                 <div className="flex flex-wrap items-center justify-center gap-x-8 gap-y-3 mt-8 text-white/60 text-sm">
                     <span className="flex items-center gap-1.5">
                         <ShoppingBag className="h-4 w-4" />
-                        <strong className="text-white">{STORES.length}+</strong> toko aktif
+                        <strong className="text-white">100+</strong> toko aktif
                     </span>
                     <span className="flex items-center gap-1.5">
                         <Package className="h-4 w-4" />

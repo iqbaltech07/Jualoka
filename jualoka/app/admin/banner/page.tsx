@@ -1,13 +1,10 @@
 "use client"
 
-import { useState, useTransition } from "react"
-import { Eye, RotateCcw, Save, Type, Palette, Layout, ImageIcon, Info } from "lucide-react"
+import { useState, useEffect } from "react"
+import { Eye, Save, Type, Palette, Layout, ImageIcon, Info } from "lucide-react"
 import {
     BannerConfig,
     BannerLayout as BannerLayoutType,
-    getBannerConfig,
-    saveBannerConfig,
-    resetBannerConfig,
 } from "@/lib/bannerStore"
 import { BannerPreview } from "@/components/admin/shared/BannerPreview"
 import { ThemePicker } from "@/components/admin/shared/ThemePicker"
@@ -15,31 +12,83 @@ import { Toast } from "@/components/admin/shared/Toast"
 import { Section } from "@/components/admin/shared/Section"
 import { Field, INPUT } from "@/components/admin/shared/Field"
 
-// ---------------------------------------------------------------------------
-// Page
-// ---------------------------------------------------------------------------
-
 export default function AdminBannerPage() {
-    const [config, setConfig] = useState<BannerConfig>(() => getBannerConfig())
+    const [config, setConfig] = useState<BannerConfig>({
+        enabled: true, badge: "Produk UMKM Pilihan", title: "Selamat Datang di Toko Kami\nMenjual Produk Berkualitas", description: "Temukan berbagai macam produk unggulan dengan harga terbaik. Selamat berbelanja!", theme: "green", customGradient: "", layout: "left", imageUrl: "", imageOpacity: 25
+    })
     const [showPreview, setShowPreview] = useState(true)
     const [toast, setToast] = useState(false)
-    const [, startTransition] = useTransition()
+    const [toastMessage, setToastMessage] = useState("Banner berhasil disimpan! ✨")
+    const [isLoading, setIsLoading] = useState(true)
+
+    // Load store banner configuration on mount from DB
+    useEffect(() => {
+        async function loadConfig() {
+            try {
+                const res = await fetch("/api/stores", { credentials: "include" })
+                if (res.ok) {
+                    const data = await res.json()
+                    if (data.store) {
+                        const s = data.store
+                        setConfig({
+                            enabled: s.bannerEnabled,
+                            badge: s.bannerBadge ?? "",
+                            title: s.bannerTitle ?? "",
+                            description: s.bannerDesc ?? "",
+                            theme: s.bannerTheme,
+                            customGradient: s.bannerGradient ?? "",
+                            layout: s.bannerLayout as BannerLayoutType,
+                            imageUrl: s.bannerImageUrl ?? "",
+                            imageOpacity: s.bannerOpacity ?? 10,
+                        })
+                    }
+                }
+            } catch (error) {
+                console.error("Failed to load banner configuration", error)
+            } finally {
+                setIsLoading(false)
+            }
+        }
+        loadConfig()
+    }, [])
 
     function patch<K extends keyof BannerConfig>(key: K, value: BannerConfig[K]) {
         setConfig((prev) => ({ ...prev, [key]: value }))
     }
 
-    function handleSave() {
-        saveBannerConfig(config)
-        setToast(true)
-        setTimeout(() => setToast(false), 2800)
-    }
+    async function handleSave() {
+        try {
+             const res = await fetch("/api/stores/banner", {
+                 method: "POST",
+                 headers: { "Content-Type": "application/json" },
+                 credentials: "include",
+                 body: JSON.stringify({
+                      bannerEnabled: config.enabled,
+                      bannerBadge: config.badge,
+                      bannerTitle: config.title,
+                      bannerDesc: config.description,
+                      bannerTheme: config.theme,
+                      bannerGradient: config.customGradient,
+                      bannerImageUrl: config.imageUrl,
+                      bannerLayout: config.layout,
+                      bannerOpacity: config.imageOpacity
+                 })
+             })
 
-    function handleReset() {
-        startTransition(() => {
-            resetBannerConfig()
-            setConfig(getBannerConfig())
-        })
+             if (res.ok) {
+                 setToastMessage("Banner berhasil disimpan! ✨")
+             } else {
+                 const data = await res.json()
+                 setToastMessage(data.message || "Gagal menyimpan banner.")
+             }
+             setToast(true)
+             setTimeout(() => setToast(false), 2800)
+        } catch (error) {
+             console.error("Save Banner Error:", error)
+             setToastMessage("Terjadi kesalahan koneksi.")
+             setToast(true)
+             setTimeout(() => setToast(false), 2800)
+        }
     }
 
     return (
@@ -60,14 +109,6 @@ export default function AdminBannerPage() {
                     >
                         <Eye className="h-4 w-4" />
                         {showPreview ? "Sembunyikan" : "Tampilkan"} Preview
-                    </button>
-                    <button
-                        type="button"
-                        onClick={handleReset}
-                        className="flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-foreground bg-white border border-border/60 rounded-xl px-4 py-2 transition-all hover:shadow-sm"
-                    >
-                        <RotateCcw className="h-4 w-4" />
-                        Reset
                     </button>
                     <button
                         type="button"
@@ -267,12 +308,11 @@ export default function AdminBannerPage() {
                 <Info className="h-4 w-4 mt-0.5 shrink-0" />
                 <div className="text-xs leading-relaxed">
                     <strong>Catatan:</strong> Perubahan yang sudah disimpan akan langsung tampil di
-                    halaman toko Anda. Fungsi simpan sementara masih bersifat{" "}
-                    <em>dummy (in-memory)</em> — pada versi produksi akan tersambung ke database.
+                    halaman toko Anda.
                 </div>
             </div>
 
-            <Toast visible={toast} message="Banner berhasil disimpan! ✨" />
+            <Toast visible={toast} message={toastMessage} />
         </div>
     )
 }

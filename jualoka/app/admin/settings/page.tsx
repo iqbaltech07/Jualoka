@@ -5,10 +5,6 @@ import { Store, Image } from "lucide-react"
 import { BannerTab } from "@/components/admin/settings/BannerTab"
 import { StoreInfoTab } from "@/components/admin/settings/StoreInfoTab"
 
-// ---------------------------------------------------------------------------
-// Page
-// ---------------------------------------------------------------------------
-
 type Tab = "info" | "banner"
 
 const TABS: { id: Tab; label: string; icon: React.ComponentType<{ className?: string }> }[] = [

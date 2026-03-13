@@ -1,10 +1,10 @@
 "use client"
 
-import { useState } from "react"
+import React, { useState } from "react"
 import { useRouter } from "next/navigation"
+import { Input } from "@/components/ui/input"
 import { ArrowRight, Check } from "lucide-react"
 import { STORE_CATEGORIES, CATEGORY_ICONS, CATEGORY_COLORS, type StoreCategory } from "@/lib/categories"
-import { saveOnboardingData } from "@/components/localStorage/OnboardingStorage"
 
 const STEPS = [
     { label: "Pilih Kategori" },
@@ -26,10 +26,25 @@ export default function OnboardingCategoryPage() {
 
     async function handleContinue() {
         if (!selected) return
+        
         setIsLoading(true)
-        await new Promise((r) => setTimeout(r, 400))
-        saveOnboardingData({ category: selected })
-        router.push("/admin/settings")
+        try {
+            const res = await fetch("/api/stores", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ category: selected })
+            })
+            
+            if (res.ok) {
+                router.push("/admin/settings")
+            } else {
+                console.error("Failed to update category", await res.text())
+            }
+        } catch (error) {
+            console.error("API error", error)
+        } finally {
+            setIsLoading(false)
+        }
     }
 
     return (

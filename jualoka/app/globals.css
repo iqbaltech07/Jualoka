@@ -125,4 +125,14 @@
   body {
     @apply bg-background text-foreground;
   }
+
+  button,
+  [role="button"] {
+    cursor: pointer !important;
+  }
+}
+
+html,
+body {
+  scroll-behavior: smooth;
 }

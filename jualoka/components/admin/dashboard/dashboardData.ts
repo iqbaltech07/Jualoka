@@ -9,10 +9,12 @@ import {
 } from "lucide-react"
 
 // ---------------------------------------------------------------------------
-// Data
+// UI Config & Metadata
 // ---------------------------------------------------------------------------
 
-export const TODAY = "Minggu, 8 Mar 2026"
+export const TODAY = new Date().toLocaleDateString("id-ID", {
+    weekday: "long", year: "numeric", month: "long", day: "numeric"
+})
 
 export const kpis = [
     {
@@ -72,55 +74,6 @@ export const kpis = [
 ]
 
 export type ProductStatus = "laris" | "stabil" | "perhatian"
-
-export const topProducts: {
-    name: string
-    sold: number
-    revenue: number
-    trend: "up" | "down"
-    status: ProductStatus
-    insight: string
-}[] = [
-        {
-            name: "Keripik Singkong Pedas Gila",
-            sold: 38,
-            revenue: 570000,
-            trend: "up",
-            status: "laris",
-            insight: "Paling sering dipesan ulang. Harga terjangkau & nama produk menarik perhatian pembeli baru.",
-        },
-        {
-            name: "Kopi Gula Aren Literan",
-            sold: 22,
-            revenue: 1430000,
-            trend: "up",
-            status: "laris",
-            insight: "Nilai per pesanan tertinggi. Pembeli cenderung beli 2–3 botol sekaligus untuk stok mingguan.",
-        },
-        {
-            name: "Seblak Instan Komplit",
-            sold: 19,
-            revenue: 228000,
-            trend: "up",
-            status: "stabil",
-            insight: "Penjualan konsisten setiap minggu. Tambahkan varian rasa untuk dorong volume lebih tinggi.",
-        },
-        {
-            name: "Cireng Isi Ayam Suwir",
-            sold: 12,
-            revenue: 216000,
-            trend: "down",
-            status: "perhatian",
-            insight: "Penjualan turun 30% bulan ini. Foto produk kurang menarik & deskripsi belum menjelaskan isi/ukuran.",
-        },
-    ]
-
-export const recentOrders = [
-    { name: "Nurul Hidayah", phone: "+62 815-1234-5678", total: 143000, items: 3, status: "baru", time: "5 menit lalu" },
-    { name: "Budi Santoso", phone: "+62 812-3456-7890", total: 42000, items: 2, status: "baru", time: "27 menit lalu" },
-    { name: "Siti Rahayu", phone: "+62 821-9876-5432", total: 231000, items: 5, status: "diproses", time: "1 jam lalu" },
-    { name: "Ahmad Fauzi", phone: "+62 831-2345-6789", total: 15000, items: 1, status: "dikirim", time: "Kemarin" },
-]
 
 export const storeHealth = [
     { label: "Foto produk sudah diunggah", ok: true },

@@ -2,13 +2,14 @@
 
 import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
-import { Package, LayoutDashboard, ShoppingCart, Settings, Store, ChevronRight, LogOut } from "lucide-react"
+import { Package, LayoutDashboard, ShoppingCart, Settings, Store, ChevronRight, LogOut, BarChart } from "lucide-react"
 import { cn } from "@/lib/utils"
-import { useEffect, useState } from "react"
-import { getAuthUser, clearAuthUser, type AuthUser } from "@/components/localStorage/AuthStorage"
+import { authClient } from "@/lib/auth-client"
+import { Toaster } from "sonner"
 
 const navLinks = [
     { href: "/admin", label: "Dashboard", icon: LayoutDashboard },
+    { href: "/admin/analysis", label: "Analisis", icon: BarChart },
     { href: "/admin/products", label: "Products", icon: Package },
     { href: "/admin/orders", label: "Orders", icon: ShoppingCart },
     { href: "/admin/settings", label: "Store Settings", icon: Settings },
@@ -42,21 +43,22 @@ function SidebarNav() {
     )
 }
 
+// type UserInfo = { name: string; email: string } | null
+
 function AdminUserFooter() {
     const router = useRouter()
-    const [user, setUser] = useState<AuthUser | null>(null)
+    
+    // Better Auth hook takes care of loading and session state automatically
+    const { data: session } = authClient.useSession()
+    const user = session?.user
 
-    useEffect(() => {
-        setUser(getAuthUser())
-    }, [])
-
-    function handleLogout() {
-        clearAuthUser()
+    async function handleLogout() {
+        await authClient.signOut()
         router.push("/auth/login")
     }
 
     const initials = user?.name
-        ? user.name.split(" ").map((w) => w[0]).slice(0, 2).join("").toUpperCase()
+        ? user.name.split(" ").map((w: string) => w[0]).slice(0, 2).join("").toUpperCase()
         : "A"
 
     return (
@@ -88,10 +90,10 @@ export default function AdminLayout({
     children: React.ReactNode
 }) {
     return (
+        <>
         <div className="flex min-h-screen bg-[#f8fafb]">
             {/* Sidebar */}
             <aside className="hidden md:flex w-64 flex-col fixed inset-y-0 left-0 z-50">
-                {/* Gradient background */}
                 <div className="flex flex-col h-full bg-gradient-to-b from-[#1a7035] to-[#218b42] shadow-xl">
                     {/* Logo */}
                     <div className="flex items-center gap-3 px-6 py-6 border-b border-white/10">
@@ -137,5 +139,7 @@ export default function AdminLayout({
                 </main>
             </div>
         </div>
+        <Toaster richColors position="top-right" />
+        </>
     )
 }

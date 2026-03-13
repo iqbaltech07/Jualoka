@@ -1,6 +1,6 @@
 import Link from "next/link"
 import { ShoppingBag } from "lucide-react"
-import { CartBadge } from "@/components/localStorage/CartBadge"
+import { CartBadge } from "@/components/toko/CartBadge"
 
 export default async function TokoLayout({
     children,
@@ -15,6 +15,18 @@ export default async function TokoLayout({
         .split("-")
         .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
         .join(" ")
+
+    // Fetch store id safely for SSR
+    // Ideally should be handled differently but for MVP we fetch here
+    let storeId = ""
+    try {
+        const url = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"
+        const storeRes = await fetch(`${url}/api/stores/${slug}`, { next: { revalidate: 60 } })
+        if (storeRes.ok) {
+            const data = await storeRes.json()
+            storeId = data.store.id
+        }
+    } catch(e) { /* ignore */ }
 
     return (
         <div className="min-h-screen bg-[#f8fafb] flex flex-col">
@@ -36,7 +48,7 @@ export default async function TokoLayout({
                     >
                         <ShoppingBag className="h-4 w-4" />
                         <span>Keranjang</span>
-                        <CartBadge />
+                        <CartBadge storeId={storeId} />
                     </Link>
                 </div>
             </header>

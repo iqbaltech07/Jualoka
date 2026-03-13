@@ -79,7 +79,7 @@ export default function HeroSection() {
                             <ArrowRight className="h-4 w-4" />
                         </Link>
                         <Link
-                            href="/toko/toko-berkah"
+                            href="/toko"
                             className="w-full sm:w-auto inline-flex items-center justify-center gap-2 bg-white text-foreground font-semibold px-7 py-3.5 rounded-2xl border border-border hover:border-primary/30 hover:bg-primary/5 transition-all text-base shadow-sm"
                         >
                             Lihat Contoh Toko

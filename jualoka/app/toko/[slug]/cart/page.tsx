@@ -1,48 +1,139 @@
 "use client"
 
-import { useState, useEffect } from "react"
-import { getCart, saveCart, CartItem } from "@/components/localStorage/CartStorage"
+import { useState, useEffect, use, useRef } from "react"
+import { getCart, updateCartQuantity, removeFromCart, CartItem } from "@/lib/cartApi"
 import Link from "next/link"
-import { ArrowLeft, Minus, Plus, Trash2, ShoppingBag, MessageCircle } from "lucide-react"
+import { ArrowLeft, Minus, Plus, Trash2, ShoppingBag, MessageCircle, AlertCircle } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { useRouter } from "next/navigation"
 
-export default function CartPage() {
+export default function CartPage({
+    params
+}: {
+    params: Promise<{ slug: string }>
+}) {
+    const { slug } = use(params)
+    const router = useRouter()
     const [mounted, setMounted] = useState(false)
+    const [isLoading, setIsLoading] = useState(false)
+    const [checkoutError, setCheckoutError] = useState("")
     const [items, setItems] = useState<CartItem[]>([])
     const [form, setForm] = useState({ name: "", whatsapp: "" })
+    const [storeId, setStoreId] = useState<string | null>(null)
+    const debounceTimeouts = useRef<Record<string, NodeJS.Timeout>>({})
 
     useEffect(() => {
-        setItems(getCart())
-        setMounted(true)
-    }, [])
+        async function loadCart() {
+            // First fetch store info to get storeId
+            const storeRes = await fetch(`/api/stores/${slug}`)
+            if (storeRes.ok) {
+                const { store } = await storeRes.json()
+                setStoreId(store.id)
 
-    useEffect(() => {
-        if (!mounted) return
-        saveCart(items)
-    }, [items, mounted])
+                // Fetch cart using storeId
+                const cartData = await getCart(store.id)
+                setItems(cartData)
+            }
+            setMounted(true)
+        }
+        loadCart()
+    }, [slug])
 
-    const update = (id: string, delta: number) =>
-        setItems((prev) =>
-            prev
-                .map((it) => it.id === id ? { ...it, quantity: it.quantity + delta } : it)
-                .filter((it) => it.quantity > 0)
-        )
+    const update = async (id: string, delta: number) => {
+        const item = items.find(it => it.id === id)
+        if (!item) return
 
-    const remove = (id: string) => setItems((prev) => prev.filter((it) => it.id !== id))
+        const newQty = item.quantity + delta
+        if (newQty <= 0) {
+            setItems(prev => prev.filter(it => it.id !== id))
+            // Clear any pending debounced update for this item
+            if (debounceTimeouts.current[id]) {
+                clearTimeout(debounceTimeouts.current[id])
+                delete debounceTimeouts.current[id]
+            }
+            await removeFromCart(id)
+        } else {
+            setItems(prev => prev.map(it => it.id === id ? { ...it, quantity: newQty } : it))
+            
+            // Debounce the API call
+            if (debounceTimeouts.current[id]) {
+                clearTimeout(debounceTimeouts.current[id])
+            }
+            
+            debounceTimeouts.current[id] = setTimeout(async () => {
+                await updateCartQuantity(id, newQty)
+                delete debounceTimeouts.current[id]
+            }, 500) // 500ms debounce
+        }
+    }
+
+    const remove = async (id: string) => {
+        setItems((prev) => prev.filter((it) => it.id !== id))
+        await removeFromCart(id)
+    }
 
     const total = items.reduce((acc, it) => acc + it.price * it.quantity, 0)
 
-    const handleCheckout = (e: React.FormEvent) => {
+    const handleCheckout = async (e: React.FormEvent) => {
         e.preventDefault()
-        if (!items.length) return
-        let msg = `Halo! Saya *${form.name}* ingin memesan:\n\n`
-        items.forEach((it) => {
-            msg += `• ${it.name} ×${it.quantity} = Rp ${(it.price * it.quantity).toLocaleString("id-ID")}\n`
-        })
-        msg += `\n*Total: Rp ${total.toLocaleString("id-ID")}*\n\nMohon info selanjutnya. Terima kasih 🙏`
-        window.open(`https://wa.me/6281234567890?text=${encodeURIComponent(msg)}`, "_blank")
+        if (!items.length || !storeId) return
+        setIsLoading(true)
+        setCheckoutError("")
+
+        try {
+            // Get WhatsApp number from the already-loaded store data
+            // (fetch store only once, reuse storeId/whatsappNumber from state)
+            const storeRes = await fetch(`/api/stores/${slug}`)
+            if (!storeRes.ok) throw new Error("Gagal memuat informasi toko.")
+            const { store } = await storeRes.json()
+
+            const orderPayload = {
+                storeId: store.id,
+                customerName: form.name,
+                customerWhatsapp: form.whatsapp,
+                items: items.map(it => ({
+                    productId: it.id,
+                    quantity: it.quantity
+                }))
+            }
+
+            const orderRes = await fetch("/api/orders", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(orderPayload)
+            })
+
+            if (!orderRes.ok) {
+                const errData = await orderRes.json()
+                setCheckoutError(errData.message || "Gagal membuat pesanan.")
+                setIsLoading(false)
+                return
+            }
+
+            // buat pesan whatsapp
+            const total = items.reduce((acc, it) => acc + it.price * it.quantity, 0)
+            let msg = `Halo! Saya *${form.name}* ingin memesan:\n\n`
+            items.forEach((it) => {
+                msg += `• ${it.name} ×${it.quantity} = Rp ${(it.price * it.quantity).toLocaleString("id-ID")}\n`
+            })
+            msg += `\n*Total: Rp ${total.toLocaleString("id-ID")}*\n\nMohon info selanjutnya. Terima kasih 🙏`
+
+            // hapus cart dari backend
+            await fetch("/api/cart?clearAll=true", { method: "DELETE" })
+            setItems([])
+
+            // redirect ke halaman success
+            const waUrl = `https://wa.me/${store.whatsappNumber}?text=${encodeURIComponent(msg)}`
+            router.push(`/toko/${slug}/cart/success?slug=${slug}&store=${encodeURIComponent(store.name)}&wa=${encodeURIComponent(waUrl)}`)
+
+        } catch (error) {
+            console.error("Checkout Error:", error)
+            setCheckoutError("Terjadi kesalahan koneksi saat checkout.")
+        } finally {
+            setIsLoading(false)
+        }
     }
 
     if (!mounted) return (
@@ -153,9 +244,15 @@ export default function CartPage() {
                                 </div>
                             </form>
                             <div className="px-6 pb-6">
-                                <button form="checkout" type="submit" className="w-full flex items-center justify-center gap-2.5 bg-[#25D366] hover:bg-[#20b858] text-white font-semibold h-12 rounded-xl transition-colors shadow-sm text-sm">
+                                {checkoutError && (
+                                    <div className="mb-3 flex items-start gap-2.5 bg-destructive/8 border border-destructive/20 rounded-xl px-4 py-3">
+                                        <AlertCircle className="h-4 w-4 text-destructive mt-0.5 shrink-0" />
+                                        <p className="text-sm text-destructive">{checkoutError}</p>
+                                    </div>
+                                )}
+                                <button form="checkout" type="submit" disabled={isLoading} className="w-full flex items-center justify-center gap-2.5 bg-[#25D366] hover:bg-[#20b858] text-white font-semibold h-12 rounded-xl transition-colors shadow-sm text-sm disabled:opacity-50">
                                     <MessageCircle className="h-5 w-5" />
-                                    Pesan via WhatsApp
+                                    {isLoading ? "Memproses..." : "Pesan via WhatsApp"}
                                 </button>
                                 <p className="text-xs text-muted-foreground text-center mt-3">
                                     Anda akan diarahkan ke WhatsApp penjual setelah klik.

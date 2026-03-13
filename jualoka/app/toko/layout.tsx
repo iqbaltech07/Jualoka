@@ -1,3 +1,5 @@
+// import Footer from "@/components/landing/Footer"
+// import Navbar from "@/components/landing/Navbar"
 import type { Metadata } from "next"
 import type { ReactNode } from "react"
 
@@ -7,5 +9,9 @@ export const metadata: Metadata = {
 }
 
 export default function StoresLayout({ children }: { children: ReactNode }) {
-    return <>{children}</>
+    return <>
+        {/* <Navbar /> */}
+        {children}
+        {/* <Footer /> */}
+    </>
 }

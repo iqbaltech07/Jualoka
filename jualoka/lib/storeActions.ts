@@ -1,20 +1,22 @@
 "use server"
 
-import { cookies } from "next/headers"
+import { prisma } from "@/lib/prisma"
+import { verifyAuth } from "@/lib/auth"
+import { headers } from "next/headers"
 
-const COOKIE_KEY = "store_is_open"
+/**
+ * Toggle the store's isOpen status in the database.
+ * This ensures the status is visible across ALL devices (not just the admin's browser).
+ */
+export async function actionToggleStore(): Promise<{ isOpen: boolean }> {
+    const userId = await verifyAuth(undefined as unknown as Request)
+    const store = await prisma.store.findUnique({ where: { userId }, select: { id: true, isOpen: true } })
+    if (!store) throw new Error("Store not found")
 
-export async function actionToggleStore() {
-    const jar = await cookies()
-    const current = jar.get(COOKIE_KEY)?.value
-    // default open = "1", closed = "0"
-    const next = current === "0" ? "1" : "0"
-    jar.set(COOKIE_KEY, next, { path: "/", httpOnly: false })
-}
-
-export async function getStoreOpenFromCookie(): Promise<boolean> {
-    const jar = await cookies()
-    const val = jar.get(COOKIE_KEY)?.value
-    // undefined (first visit) = open, "1" = open, "0" = closed
-    return val !== "0"
+    const updated = await prisma.store.update({
+        where: { id: store.id },
+        data: { isOpen: !store.isOpen },
+        select: { isOpen: true }
+    })
+    return updated
 }

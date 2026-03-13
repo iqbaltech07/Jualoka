@@ -3,8 +3,8 @@
 import { useState } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
-import { Mail, Lock, Eye, EyeOff, Store, UserPlus, ArrowRight, AlertCircle } from "lucide-react"
-import { saveAuthUser } from "@/components/localStorage/AuthStorage"
+import { Mail, Lock, Eye, EyeOff, ArrowRight, AlertCircle } from "lucide-react"
+import { authClient } from "@/lib/auth-client"
 
 type Mode = "login" | "register"
 
@@ -44,17 +44,45 @@ export default function LoginPage() {
         if (!validate()) return
 
         setIsLoading(true)
-        // Simulasi delay network
-        await new Promise((r) => setTimeout(r, 800))
+        
+        try {
+            const { data, error } = await authClient.signIn.email({
+                email,
+                password
+            })
 
-        // Simulasi login: simpan user dummy
-        saveAuthUser({
-            email,
-            name: "Admin Toko",
-            token: `dummy-token-${Date.now()}`,
-        })
-        setIsLoading(false)
-        router.push("/admin")
+            if (error) {
+                 setServerError(error.message || "Email atau password salah.")
+                 setIsLoading(false)
+                 // NOTE: If they required verification, better-auth might return specific error code
+                 return
+            }
+
+            // Successfully logged in via better-auth
+            // We need to fetch the store to determine redirect
+            const storeRes = await fetch("/api/stores", { credentials: "include" })
+            if (!storeRes.ok) {
+                // If they have no store (which shouldn't happen with our hook, but fallback)
+                router.push("/onboarding/category")
+                return
+            }
+            
+            const storeData = await storeRes.json()
+            const store = storeData.store
+
+            // Check if user has completed store onboarding (has category)
+            if (store && !store.category) {
+                 router.push("/onboarding/category")
+            } else if (!store) {
+                 router.push("/onboarding/category") // Fallback just in case
+            } else {
+                 router.push("/admin")
+            }
+        } catch (error) {
+            console.error("Login Error", error)
+            setServerError("Terjadi kesalahan koneksi.")
+            setIsLoading(false)
+        }
     }
 
     function handleModeSwitch(newMode: Mode) {
@@ -72,7 +100,7 @@ export default function LoginPage() {
             <div className="bg-white rounded-3xl shadow-xl shadow-black/5 border border-border/50 overflow-hidden">
 
                 {/* Tab toggle */}
-                <div className="flex p-1.5 gap-1 bg-muted/60 m-5 rounded-2xl">
+                {/* <div className="flex p-1.5 gap-1 bg-muted/60 m-5 rounded-2xl">
                     <button
                         type="button"
                         onClick={() => handleModeSwitch("login")}
@@ -95,10 +123,10 @@ export default function LoginPage() {
                         <UserPlus className="h-4 w-4" />
                         Buat toko baru
                     </button>
-                </div>
+                </div> */}
 
                 {/* Header */}
-                <div className="px-6 pb-2">
+                <div className="px-6 pb-2 pt-6">
                     <h1 className="text-2xl font-bold text-foreground">Selamat datang kembali</h1>
                     <p className="text-muted-foreground text-sm mt-1">
                         Masuk ke dashboard toko Anda untuk mulai berjualan.

@@ -2,7 +2,7 @@
 
 import { useTransition, useState } from "react"
 import { Store, Power, Loader2 } from "lucide-react"
-import { actionToggleStore } from "@/lib/storeActions"
+import { toast } from "sonner"
 
 export function StoreToggleCard({ initialOpen }: { initialOpen: boolean }) {
     const [isOpen, setIsOpen] = useState(initialOpen)
@@ -10,8 +10,20 @@ export function StoreToggleCard({ initialOpen }: { initialOpen: boolean }) {
 
     function handleToggle() {
         startTransition(async () => {
-            await actionToggleStore()
-            setIsOpen((o) => !o)
+            const nextState = !isOpen
+            try {
+                const res = await fetch("/api/stores", {
+                    method: "PATCH",
+                    headers: { "Content-Type": "application/json" },
+                    credentials: "include",
+                    body: JSON.stringify({ isOpen: nextState }),
+                })
+                if (!res.ok) throw new Error("Gagal mengubah status toko.")
+                setIsOpen(nextState)
+                toast.success(nextState ? "Toko berhasil dibuka! 🟢" : "Toko berhasil ditutup! 🔴")
+            } catch {
+                toast.error("Gagal mengubah status toko.")
+            }
         })
     }
 

@@ -4,9 +4,9 @@ import { Store, ChevronRight } from "lucide-react"
 
 const NAV_LINKS = [
     { href: "/toko", label: "Jelajahi Toko" },
-    { href: "#fitur", label: "Fitur" },
-    { href: "#cara-kerja", label: "Cara Kerja" },
-    { href: "#testimoni", label: "Testimoni" },
+    { href: "/#fitur", label: "Fitur" },
+    { href: "/#cara-kerja", label: "Cara Kerja" },
+    { href: "/#testimoni", label: "Testimoni" },
 ]
 
 export default function Navbar() {

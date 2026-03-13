@@ -4,7 +4,7 @@ import { useState } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { Mail, Lock, Eye, EyeOff, Store, AlertCircle, ArrowRight, ChevronLeft, Info } from "lucide-react"
-import { saveOnboardingData } from "@/components/localStorage/OnboardingStorage"
+import { authClient } from "@/lib/auth-client"
 
 type RegisterData = {
     name: string
@@ -14,10 +14,6 @@ type RegisterData = {
 
 function validateEmail(email: string): boolean {
     return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)
-}
-
-function generateOTP(): string {
-    return Math.floor(100000 + Math.random() * 900000).toString()
 }
 
 export default function RegisterPage() {
@@ -60,19 +56,39 @@ export default function RegisterPage() {
         if (!validate()) return
 
         setIsLoading(true)
-        await new Promise((r) => setTimeout(r, 600))
+        setErrors({})
 
-        const generatedOtp = generateOTP()
-        setOtp(generatedOtp)
+        try {
+            const { error } = await authClient.signUp.email({
+                email,
+                password,
+                name: name // Use store name as the user name for MVP
+            })
 
-        const pendingData: RegisterData & { otp: string } = {
-            name,
-            email,
-            password,
-            otp: generatedOtp,
+            if (error) {
+                setErrors({ email: error.message || "Registrasi gagal." })
+                setIsLoading(false)
+                return
+            }
+
+            // Send email verification OTP
+            const otpRes = await authClient.emailOtp.sendVerificationOtp({
+                email,
+                type: "email-verification",
+            })
+
+            if (otpRes.error) {
+                setErrors({ email: otpRes.error.message || "Gagal mengirim OTP." })
+                setIsLoading(false)
+                return
+            }
+
+            router.push(`/auth/verify-otp?email=${encodeURIComponent(email)}`)
+
+        } catch (error) {
+            console.error("Register Error:", error)
+            setErrors({ email: "Terjadi kesalahan koneksi." })
         }
-        localStorage.setItem("jualoka_pending_register", JSON.stringify(pendingData))
-        saveOnboardingData({ storeName: name })
 
         setIsLoading(false)
     }
@@ -103,46 +119,6 @@ export default function RegisterPage() {
                 <span className={`text-[11px] font-semibold ${strength === 1 ? "text-destructive" : strength === 2 ? "text-secondary-foreground" : "text-primary"}`}>
                     {labels[strength - 1]}
                 </span>
-            </div>
-        )
-    }
-
-    if (otp) {
-        return (
-            <div className="w-full max-w-md">
-                <div className="bg-white rounded-3xl shadow-xl shadow-black/5 border border-border/50 p-6">
-                    <div className="flex items-center gap-3 mb-5">
-                        <div className="h-12 w-12 rounded-2xl bg-primary/10 flex items-center justify-center">
-                            <Info className="h-6 w-6 text-primary" />
-                        </div>
-                        <div>
-                            <h2 className="font-bold text-lg">OTP Terkirim!</h2>
-                            <p className="text-muted-foreground text-sm">Cek kotak di bawah ini</p>
-                        </div>
-                    </div>
-
-                    <p className="text-sm text-muted-foreground mb-4">
-                        Karena ini adalah simulasi, kode OTP ditampilkan langsung di sini:
-                    </p>
-
-                    <div className="bg-gradient-to-r from-primary/8 to-primary/5 border-2 border-primary/20 rounded-2xl p-5 text-center mb-5">
-                        <p className="text-xs font-semibold text-primary/70 uppercase tracking-widest mb-2">Kode OTP Simulasi</p>
-                        <p className="text-4xl font-black tracking-[0.3em] text-primary">{otp}</p>
-                        <p className="text-xs text-muted-foreground mt-2">Berlaku 10 menit</p>
-                    </div>
-
-                    <p className="text-sm text-muted-foreground mb-5">
-                        Salin kode di atas, lalu klik <strong>Verifikasi OTP</strong> untuk melanjutkan.
-                    </p>
-
-                    <button
-                        onClick={handleContinue}
-                        className="h-12 w-full rounded-xl bg-primary text-primary-foreground font-semibold text-sm flex items-center justify-center gap-2 hover:bg-primary/90 active:scale-[0.98] transition-all shadow-sm hover:shadow-md"
-                    >
-                        Verifikasi OTP
-                        <ArrowRight className="h-4 w-4" />
-                    </button>
-                </div>
             </div>
         )
     }
@@ -286,7 +262,7 @@ export default function RegisterPage() {
                             </>
                         ) : (
                             <>
-                                Kirim OTP
+                                Buat Toko
                                 <ArrowRight className="h-4 w-4" />
                             </>
                         )}

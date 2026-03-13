@@ -1,66 +1,73 @@
 import Link from "next/link"
-import { MapPin, Package, Star, ChevronRight } from "lucide-react"
-import { type StoreData } from "./storesData"
+import { Package, ChevronRight } from "lucide-react"
 
-export function StoreCard({ store }: { store: StoreData }) {
+export type StoreCardData = {
+    id: string
+    name: string
+    slug: string
+    category: string
+    productCount: number
+    color: string
+}
+
+export function StoreCard({ store }: { store: StoreCardData }) {
+    const defaultColor = "from-emerald-400 to-green-600"
+    const bgClass = store.color || defaultColor
+
     return (
         <Link
             href={`/toko/${store.slug}`}
-            className="group bg-white rounded-2xl border border-border/50 shadow-sm hover:shadow-xl transition-all duration-300 hover:-translate-y-1 overflow-hidden flex flex-col"
+            className="group relative bg-white rounded-3xl border border-border/60 shadow-sm hover:shadow-2xl hover:shadow-primary/10 transition-all duration-500 hover:-translate-y-1 overflow-hidden flex flex-col"
         >
-            {/* Color banner */}
-            <div className={`h-20 bg-gradient-to-r ${store.color} relative`}>
-                {store.badge && (
-                    <div className="absolute top-3 right-3 bg-white/90 backdrop-blur-sm text-[10px] font-bold uppercase tracking-wide px-2.5 py-1 rounded-full text-foreground shadow">
-                        {store.badge}
-                    </div>
-                )}
-                {/* Avatar */}
-                <div className="absolute -bottom-6 left-5 h-14 w-14 rounded-2xl bg-white shadow-lg flex items-center justify-center ring-2 ring-white">
-                    <span className={`h-12 w-12 rounded-xl bg-gradient-to-br ${store.color} flex items-center justify-center text-white font-black text-xl`}>
-                        {store.name.charAt(0)}
+            {/* Extended Color Banner */}
+            <div className={`h-28 bg-linear-to-br ${bgClass} relative overflow-hidden`}>
+                {/* Decorative Elements */}
+                <div className="absolute -top-10 -right-10 w-32 h-32 bg-white/20 rounded-full blur-2xl transform transition-transform duration-700 group-hover:scale-150 group-hover:translate-x-4" />
+                <div className="absolute -bottom-10 -left-10 w-32 h-32 bg-black/10 rounded-full blur-2xl transform transition-transform duration-700 group-hover:scale-150 group-hover:-translate-x-4" />
+                
+                {/* Quick Category Badge Floating */}
+                <div className="absolute top-4 right-4 z-20">
+                    <span className="bg-white/95 backdrop-blur-md shadow-sm px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider text-foreground/80 transition-transform duration-500 group-hover:-translate-y-0.5">
+                        {store.category}
                     </span>
                 </div>
             </div>
 
-            {/* Content */}
-            <div className="pt-10 px-5 pb-5 flex flex-col flex-1">
-                {/* Category pill */}
-                <span className="self-end text-[10px] font-bold uppercase tracking-wider text-muted-foreground bg-muted px-2 py-0.5 rounded-full -mt-2">
-                    {store.category}
-                </span>
+            {/* Floating Top Elements */}
+            <div className="absolute top-16 left-6 z-10 w-full flex items-end justify-between">
+                {/* Prominent Avatar */}
+                <div className="h-20 w-20 rounded-2xl bg-white shadow-lg flex items-center justify-center ring-[6px] ring-white transform transition-transform duration-500 group-hover:-translate-y-1">
+                    <div className={`h-full w-full rounded-xl bg-linear-to-br ${bgClass} flex items-center justify-center text-white font-black text-3xl shadow-inner relative overflow-hidden`}>
+                        <span className="relative z-10">{store.name.charAt(0).toUpperCase()}</span>
+                        <div className="absolute inset-0 bg-black/10" />
+                    </div>
+                </div>
+            </div>
 
-                <h3 className="font-bold text-base leading-tight mt-1 group-hover:text-primary transition-colors">
+            {/* Content Body */}
+            <div className="pt-14 px-6 pb-6 flex flex-col flex-1 relative z-0">
+                <h3 className="font-extrabold text-lg text-foreground leading-tight line-clamp-1 group-hover:text-primary transition-colors mt-2">
                     {store.name}
                 </h3>
-                <p className="text-xs text-muted-foreground mt-0.5">oleh {store.owner}</p>
-
-                {/* Location */}
-                <div className="flex items-center gap-1 text-xs text-muted-foreground mt-2">
-                    <MapPin className="h-3 w-3 flex-shrink-0" />
-                    {store.location}
-                </div>
-
-                {/* Description */}
-                <p className="text-sm text-muted-foreground/80 mt-3 leading-relaxed line-clamp-2 flex-1">
-                    {store.description}
+                
+                <p className="text-sm text-muted-foreground mt-2 line-clamp-2 flex-1 leading-relaxed">
+                    Temukan produk {store.category.toLowerCase()} pilihan berkualitas dengan penawaran harga terbaik.
                 </p>
 
-                {/* Stats row */}
-                <div className="flex items-center justify-between mt-4 pt-4 border-t border-border/40">
-                    <div className="flex items-center gap-3 text-xs text-muted-foreground">
-                        <span className="flex items-center gap-1">
-                            <Package className="h-3 w-3" />
-                            {store.productCount} produk
-                        </span>
-                        <span className="flex items-center gap-1">
-                            <Star className="h-3 w-3 fill-amber-400 text-amber-400" />
-                            {store.rating} ({store.reviewCount})
-                        </span>
+                {/* Footer / Stats */}
+                <div className="flex items-center justify-between mt-6 pt-5 border-t border-border/60">
+                    <div className="flex items-center gap-2 text-xs text-muted-foreground font-medium bg-muted/60 px-3 py-1.5 rounded-xl border border-border/40">
+                        <Package className="h-4 w-4 text-primary" />
+                        <span className="text-foreground font-bold">{store.productCount}</span> Produk
                     </div>
-                    <span className="flex items-center gap-1 text-xs font-semibold text-primary opacity-0 group-hover:opacity-100 transition-opacity">
-                        Kunjungi <ChevronRight className="h-3 w-3" />
-                    </span>
+
+                    {/* Animated Visit Button */}
+                    <div className="flex items-center gap-1.5 text-xs font-bold text-primary mr-1 group-hover:pr-2 transition-all duration-300">
+                        <span>Kunjungi</span>
+                        <div className="h-7 w-7 rounded-full bg-primary/10 flex items-center justify-center group-hover:bg-primary group-hover:text-white transition-colors duration-300 shadow-sm">
+                            <ChevronRight className="h-4 w-4" />
+                        </div>
+                    </div>
                 </div>
             </div>
         </Link>
