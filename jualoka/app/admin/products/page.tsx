@@ -30,17 +30,29 @@ type Product = {
     totalSold30Days: number
 }
 
-const statusConfig = {
-    "Laris":       { label: "Laris",       bg: "bg-emerald-500", text: "text-emerald-700", pill: "bg-emerald-50 ring-emerald-200 text-emerald-700" },
-    "Stabil":      { label: "Stabil",      bg: "bg-blue-500",    text: "text-blue-700",    pill: "bg-blue-50 ring-blue-200 text-blue-700" },
-    "Kurang Laku": { label: "Kurang Laku", bg: "bg-amber-500",   text: "text-amber-700",   pill: "bg-amber-50 ring-amber-200 text-amber-700" },
-    "Tidak Layak": { label: "Tidak Layak", bg: "bg-rose-500",    text: "text-rose-700",    pill: "bg-rose-50 ring-rose-200 text-rose-700" },
+const statusConfig: Record<string, any> = {
+    "Laris": { label: "Laris", bg: "bg-emerald-500", text: "text-emerald-700", pill: "bg-emerald-50 ring-emerald-200 text-emerald-700" },
+    "Stabil": { label: "Stabil", bg: "bg-blue-500", text: "text-blue-700", pill: "bg-blue-50 ring-blue-200 text-blue-700" },
+    "Kurang Laku": { label: "Kurang Laku", bg: "bg-amber-500", text: "text-amber-700", pill: "bg-amber-50 ring-amber-200 text-amber-700" },
+    "Tidak Layak": { label: "Tidak Layak", bg: "bg-rose-500", text: "text-rose-700", pill: "bg-rose-50 ring-rose-200 text-rose-700" },
+    "Rugi": { label: "Rugi", bg: "bg-red-600", text: "text-red-800", pill: "bg-red-50 ring-red-300 text-red-800" },
 }
 
-function getStatus(totalSold: number): keyof typeof statusConfig {
-    if (totalSold >= 30) return "Laris"
-    if (totalSold >= 10) return "Stabil"
-    if (totalSold >= 1)  return "Kurang Laku"
+function getStatus(product: Product, allProducts: Product[]): string {
+    const actualCost = product.cost || 0
+    const profitPerItem = product.price - actualCost
+    const totalProfit = profitPerItem * product.totalSold30Days
+
+    if (product.price < actualCost || totalProfit < 0) return "Rugi"
+    if (allProducts.length === 0) return "Tidak Layak"
+
+    const sortedBySold = [...allProducts].sort((a, b) => (b.totalSold30Days || 0) - (a.totalSold30Days || 0))
+    const index = sortedBySold.findIndex(p => (p.totalSold30Days || 0) === (product.totalSold30Days || 0))
+    const percentile = index / allProducts.length
+
+    if (percentile < 0.2) return "Laris"
+    if (percentile < 0.6) return "Stabil"
+    if (percentile < 0.9) return "Kurang Laku"
     return "Tidak Layak"
 }
 
@@ -60,8 +72,8 @@ function SkeletonCard() {
     )
 }
 
-function ProductCard({ product, onDelete }: { product: Product; onDelete: (id: string, name: string) => void }) {
-    const status = getStatus(product.totalSold30Days || 0)
+function ProductCard({ product, onDelete, allProducts }: { product: Product; onDelete: (id: string, name: string) => void; allProducts: Product[] }) {
+    const status = getStatus(product, allProducts)
     const s = statusConfig[status]
     const margin = product.cost && product.cost > 0
         ? Math.round(((product.price - product.cost) / product.price) * 100)
@@ -94,13 +106,12 @@ function ProductCard({ product, onDelete }: { product: Product; onDelete: (id: s
                         <span className={`h-1.5 w-1.5 rounded-full ${s.bg} shrink-0`} />
                         {s.label}
                     </span>
-                    <span className={`ml-auto px-2 py-0.5 rounded-full text-[11px] font-bold ${
-                        product.stock === 0
-                            ? "bg-rose-100 text-rose-600"
-                            : product.stock <= 10
+                    <span className={`ml-auto px-2 py-0.5 rounded-full text-[11px] font-bold ${product.stock === 0
+                        ? "bg-rose-100 text-rose-600"
+                        : product.stock <= 10
                             ? "bg-amber-100 text-amber-700"
                             : "bg-zinc-100 text-zinc-600"
-                    }`}>
+                        }`}>
                         Stok: {product.stock}
                     </span>
                 </div>
@@ -187,9 +198,9 @@ export default function ProductsPage() {
         p.name.toLowerCase().includes(search.toLowerCase())
     )
 
-    const totalStock  = products.reduce((s, p) => s + p.stock, 0)
-    const lowStock    = products.filter((p) => p.stock > 0 && p.stock <= 10).length
-    const outOfStock  = products.filter((p) => p.stock === 0).length
+    const totalStock = products.reduce((s, p) => s + p.stock, 0)
+    const lowStock = products.filter((p) => p.stock > 0 && p.stock <= 10).length
+    const outOfStock = products.filter((p) => p.stock === 0).length
 
     return (
         <div className="flex flex-col gap-5">
@@ -212,9 +223,9 @@ export default function ProductsPage() {
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
                     {[
                         { icon: ShoppingBag, val: products.length, label: "Total Produk", color: "text-primary", bg: "bg-primary/10" },
-                        { icon: Box,         val: totalStock,        label: "Total Stok",   color: "text-blue-600", bg: "bg-blue-50" },
-                        { icon: AlertTriangle,val: lowStock,         label: "Stok Menipis", color: "text-amber-600",bg: "bg-amber-50" },
-                        { icon: BarChart2,   val: outOfStock,        label: "Stok Habis",   color: "text-rose-500", bg: "bg-rose-50" },
+                        { icon: Box, val: totalStock, label: "Total Stok", color: "text-blue-600", bg: "bg-blue-50" },
+                        { icon: AlertTriangle, val: lowStock, label: "Stok Menipis", color: "text-amber-600", bg: "bg-amber-50" },
+                        { icon: BarChart2, val: outOfStock, label: "Stok Habis", color: "text-rose-500", bg: "bg-rose-50" },
                     ].map(({ icon: Icon, val, label, color, bg }) => (
                         <div key={label} className="bg-white rounded-xl border border-zinc-100 shadow-sm px-3.5 py-3 flex items-center gap-2.5">
                             <div className={`h-8 w-8 rounded-lg ${bg} flex items-center justify-center shrink-0`}>
@@ -274,7 +285,7 @@ export default function ProductsPage() {
             ) : (
                 <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
                     {filtered.map((product) => (
-                        <ProductCard key={product.id} product={product} onDelete={handleDelete} />
+                        <ProductCard key={product.id} product={product} onDelete={handleDelete} allProducts={products} />
                     ))}
                 </div>
             )}

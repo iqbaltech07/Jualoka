@@ -8,19 +8,21 @@ export function CartBadge({ storeId }: { storeId?: string }) {
 
     useEffect(() => {
         if (!storeId) return
-        
+
         async function fetchCart() {
-             const items = await getCart(storeId as string)
-             const totalItems = items.reduce((acc, item) => acc + item.quantity, 0)
-             setCount(totalItems)
+            const items = await getCart(storeId as string)
+            const totalItems = items.reduce((acc, item) => acc + item.quantity, 0)
+            setCount(totalItems)
         }
-        
+
+        // Initial load
         fetchCart()
 
-        // Optional: listen for custom events if you want the cart badge to update instantly when items are added
-        // Otherwise, it requires a page refresh. For MVP this is acceptable or we could add an interval.
-        const interval = setInterval(fetchCart, 5000) // Poll every 5s for MVP simplicity
-        return () => clearInterval(interval)
+        // Listen for updates from other components
+        const handleCartUpdate = () => fetchCart()
+        window.addEventListener("cartUpdated", handleCartUpdate)
+        
+        return () => window.removeEventListener("cartUpdated", handleCartUpdate)
     }, [storeId])
 
     if (count === 0) return null

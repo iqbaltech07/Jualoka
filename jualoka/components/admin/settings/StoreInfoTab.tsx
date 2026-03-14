@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { Store, Phone, Link2, CheckCircle2, Pencil } from "lucide-react"
+import { toast } from "sonner"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -14,7 +15,6 @@ export function StoreInfoTab() {
     const [slug, setSlug] = useState("")
     const [whatsapp, setWhatsapp] = useState("")
     const [category, setCategory] = useState<StoreCategory | "">("")
-    const [saved, setSaved] = useState(false)
     const [isLoading, setIsLoading] = useState(true)
 
     useEffect(() => {
@@ -56,15 +56,14 @@ export function StoreInfoTab() {
 
             if (res.ok) {
                 setIsEditing(false)
-                setSaved(true)
-                setTimeout(() => setSaved(false), 2500)
+                toast.success("Informasi toko berhasil disimpan!")
             } else {
                 const data = await res.json()
-                alert(data.message || "Gagal menyimpan pengaturan toko.")
+                toast.error(data.message || "Gagal menyimpan pengaturan toko.")
             }
         } catch (error) {
             console.error("Save error", error)
-            alert("Terjadi kesalahan koneksi.")
+            toast.error("Terjadi kesalahan koneksi.")
         }
     }
 
@@ -152,13 +151,6 @@ export function StoreInfoTab() {
                     <Button variant="destructive" size="sm" className="rounded-xl shrink-0">Hapus Toko</Button>
                 </CardContent>
             </Card>
-
-            {saved && (
-                <div className="fixed bottom-6 right-6 z-50 flex items-center gap-2 bg-foreground text-background text-sm font-medium px-4 py-3 rounded-2xl shadow-2xl">
-                    <CheckCircle2 className="h-4 w-4 text-emerald-400" />
-                    Informasi toko berhasil disimpan!
-                </div>
-            )}
         </div>
     )
 }

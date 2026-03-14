@@ -5,11 +5,11 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 
 export function ProductAnalysis({ data }: {
     data?: {
-        topProducts: { name: string; sold: number; revenue: number; status: string }[]
+        topProducts: { name: string; sold: number; revenue: number; status: string; suggestion?: string }[]
     }
 }) {
     const list = data?.topProducts || []
-    
+
     return (
         <Card className="border-0 shadow-sm bg-white lg:col-span-1">
             <CardHeader className="px-5 pt-5 pb-3 flex flex-row items-center justify-between">
@@ -26,13 +26,14 @@ export function ProductAnalysis({ data }: {
                     {list.length === 0 ? (
                         <p className="text-xs text-muted-foreground text-center py-8 italic">Belum ada data penjualan.</p>
                     ) : list.map((p, i) => {
-                        const statusCfg = {
-                            "Laris":       { label: "Laris",       bg: "bg-emerald-500", pill: "bg-emerald-50 ring-emerald-200 text-emerald-700" },
-                            "Stabil":      { label: "Stabil",      bg: "bg-blue-500",    pill: "bg-blue-50 ring-blue-200 text-blue-700" },
-                            "Kurang Laku": { label: "Kurang Laku", bg: "bg-amber-500",   pill: "bg-amber-50 ring-amber-200 text-amber-700" },
-                            "Tidak Layak": { label: "Tidak Layak", bg: "bg-rose-500",    pill: "bg-rose-50 ring-rose-200 text-rose-700" },
+                        const statusCfg: Record<string, any> = {
+                            "Laris": { label: "Laris", bg: "bg-emerald-500", pill: "bg-emerald-50 ring-emerald-200 text-emerald-700" },
+                            "Stabil": { label: "Stabil", bg: "bg-blue-500", pill: "bg-blue-50 ring-blue-200 text-blue-700" },
+                            "Kurang Laku": { label: "Kurang Laku", bg: "bg-amber-500", pill: "bg-amber-50 ring-amber-200 text-amber-700" },
+                            "Tidak Layak": { label: "Tidak Layak", bg: "bg-rose-500", pill: "bg-rose-50 ring-rose-200 text-rose-700" },
+                            "Rugi": { label: "Rugi", bg: "bg-red-600", pill: "bg-red-50 ring-red-300 text-red-800" },
                         }[p.status] || { label: p.status || "Unknown", bg: "bg-zinc-500", pill: "bg-zinc-50 ring-zinc-200 text-zinc-700" }
-                        
+
                         return (
                             <div key={i} className="rounded-xl border border-border/50 bg-white p-3 hover:bg-zinc-50/50 transition-colors">
                                 <div className="flex items-start gap-2.5">
@@ -50,6 +51,11 @@ export function ProductAnalysis({ data }: {
                                         <div className="flex items-center gap-2 mt-1">
                                             <span className="text-[11px] text-muted-foreground font-medium">{p.sold} terjual</span>
                                         </div>
+                                        {p.suggestion && (
+                                            <p className="text-[10px] text-muted-foreground mt-1.5 leading-snug bg-muted/50 p-1.5 rounded">
+                                                💡 {p.suggestion}
+                                            </p>
+                                        )}
                                     </div>
                                 </div>
                             </div>

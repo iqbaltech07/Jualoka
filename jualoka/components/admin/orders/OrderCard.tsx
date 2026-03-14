@@ -27,7 +27,7 @@ export function OrderCard({
             <div className="flex items-start gap-4 p-5">
                 {/* Avatar */}
                 <div
-                    className={`h-10 w-10 rounded-full bg-gradient-to-br ${avatarColor(order.id)} flex items-center justify-center text-white font-bold text-sm shrink-0`}
+                    className={`h-10 w-10 rounded-full bg-linear-to-br ${avatarColor(order.id)} flex items-center justify-center text-white font-bold text-sm shrink-0`}
                 >
                     {initials(order.customer)}
                 </div>
@@ -36,9 +36,9 @@ export function OrderCard({
                 <div className="flex-1 min-w-0">
                     <div className="flex items-start justify-between gap-2 flex-wrap">
                         <div>
-                            <p className="font-semibold text-sm">{order.customer}</p>
+                            <p className="font-semibold text-sm">{order.customer || "Pembeli Tidak Diketahui"}</p>
                             <p className="text-xs text-muted-foreground flex items-center gap-1 mt-0.5">
-                                <Phone className="h-3 w-3" /> {order.phone}
+                                <Phone className="h-3 w-3" /> {order.phone || "Nomor tidak tersedia"}
                             </p>
                         </div>
                         <div className="flex items-center gap-2 shrink-0">
@@ -117,7 +117,7 @@ export function OrderCard({
                         {/* Actions */}
                         <div className="flex gap-2 pt-1">
                             <a
-                                href={`https://wa.me/${order.phone.replace(/\D/g, "")}?text=Halo ${encodeURIComponent(order.customer)}, pesanan kamu ${order.orderNumber} sudah kami konfirmasi 🙏`}
+                                href={`https://wa.me/${(order.phone || "").replace(/\D/g, "")}?text=Halo ${encodeURIComponent(order.customer || "Kak")}, pesanan kamu ${order.orderNumber} sudah kami konfirmasi 🙏`}
                                 target="_blank"
                                 rel="noopener noreferrer"
                                 className="flex items-center gap-2 text-xs font-semibold text-white bg-[#25D366] hover:bg-[#1ebe5d] rounded-xl px-4 py-2 transition-colors"

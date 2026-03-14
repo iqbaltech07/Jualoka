@@ -11,7 +11,7 @@ type Product = {
     price: number
     image: string
     description: string
-    stock: number        // Added: needed to enforce stock limit
+    stock: number
     tag?: string | null
 }
 
@@ -25,11 +25,20 @@ export function ProductGrid({
     storeId?: string
 }) {
     const [cart, setCart] = useState<CartItem[]>([])
-    const debounceTimeouts = useRef<Record<string, NodeJS.Timeout>>({})
 
     useEffect(() => {
         if (!storeId) return
-        getCart(storeId).then(setCart)
+        
+        async function load() {
+             const data = await getCart(storeId as string)
+             setCart(data)
+        }
+        
+        load()
+
+        const handleCartUpdate = () => load()
+        window.addEventListener("cartUpdated", handleCartUpdate)
+        return () => window.removeEventListener("cartUpdated", handleCartUpdate)
     }, [storeId])
 
     function getQty(id: string) {
@@ -38,52 +47,24 @@ export function ProductGrid({
 
     async function addItem(product: Product) {
         const qty = getQty(product.id)
-        // Prevent adding more than available stock
         if (qty >= product.stock) return
 
-        const newQty = qty + 1
         if (qty === 0) {
-            setCart(prev => [...prev, { id: product.id, name: product.name, price: product.price, quantity: 1 }])
-            await addToCart(storeId as string, product.id, 1)
+            const newItem: CartItem = { id: product.id, name: product.name, price: product.price, quantity: 1, stock: product.stock, image: product.image }
+            await addToCart(storeId as string, newItem)
         } else {
-            setCart(prev => prev.map(it => it.id === product.id ? { ...it, quantity: newQty } : it))
-            
-            // Debounce the API call
-            if (debounceTimeouts.current[product.id]) {
-                clearTimeout(debounceTimeouts.current[product.id])
-            }
-            
-            debounceTimeouts.current[product.id] = setTimeout(async () => {
-                await updateCartQuantity(product.id, newQty)
-                delete debounceTimeouts.current[product.id]
-            }, 500)
+            const newQty = qty + 1
+            await updateCartQuantity(storeId as string, product.id, newQty)
         }
+        // State updates are handled by the cartUpdated event listener
     }
 
     async function decrease(product: Product) {
         const qty = getQty(product.id)
-        const newQty = qty - 1
-
         if (qty <= 1) {
-            setCart(prev => prev.filter(it => it.id !== product.id))
-            // Clear any pending debounced update
-            if (debounceTimeouts.current[product.id]) {
-                clearTimeout(debounceTimeouts.current[product.id])
-                delete debounceTimeouts.current[product.id]
-            }
-            await removeFromCart(product.id)
+            await removeFromCart(storeId as string, product.id)
         } else {
-            setCart(prev => prev.map(it => it.id === product.id ? { ...it, quantity: newQty } : it))
-            
-            // Debounce the API call
-            if (debounceTimeouts.current[product.id]) {
-                clearTimeout(debounceTimeouts.current[product.id])
-            }
-            
-            debounceTimeouts.current[product.id] = setTimeout(async () => {
-                await updateCartQuantity(product.id, newQty)
-                delete debounceTimeouts.current[product.id]
-            }, 500)
+            await updateCartQuantity(storeId as string, product.id, qty - 1)
         }
     }
 

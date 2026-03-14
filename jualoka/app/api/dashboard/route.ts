@@ -22,8 +22,7 @@ export async function GET(req: Request) {
             productCount,
             recentOrdersRaw,
             completedOrderItems,
-            salesHistoryRaw,
-            topProductsRaw
+            salesHistoryRaw
         ]: any[] = await Promise.all([
             prisma.order.count({ where: { storeId } }),
             prisma.order.count({ where: { storeId, status: "baru" } }),
@@ -50,42 +49,67 @@ export async function GET(req: Request) {
                     createdAt: true,
                     orderItems: { select: { price: true, quantity: true } }
                 }
-            }),
-            // Top products by sold count
-            prisma.orderItem.groupBy({
-                by: ["productId"],
-                where: { order: { storeId, status: "selesai" } },
-                _sum: { quantity: true },
-                _count: { id: true },
-                orderBy: { _sum: { quantity: "desc" } },
-                take: 5
             })
         ])
 
-        const topProductIds = (topProductsRaw as any[]).map(p => p.productId)
-        
-        // Fetch product names for top products
-        const topProductDetails = await prisma.product.findMany({
-            where: { id: { in: topProductIds } },
-            select: { id: true, name: true }
+        // Fetch all product sales stats for percentile calculation
+        const allProductStats = await prisma.orderItem.groupBy({
+            by: ["productId"],
+            where: { order: { storeId, status: "selesai" } },
+            _sum: { quantity: true },
         })
 
-        const topProducts = (topProductsRaw as any[]).map(tp => {
-            const detail = topProductDetails.find(d => d.id === tp.productId)
-            const qty = tp._sum.quantity || 0
-            
+        const allProducts = await prisma.product.findMany({
+            where: { storeId },
+            select: { id: true, name: true, price: true, cost: true }
+        })
+
+        const salesMap = new Map((allProductStats as any[]).map(s => [s.productId, s._sum.quantity || 0]))
+        
+        const productsWithStatus = allProducts
+            .map(p => ({
+                ...p,
+                sold: salesMap.get(p.id) || 0
+            }))
+            .sort((a, b) => b.sold - a.sold)
+
+        const topProducts = productsWithStatus.map((p, index) => {
+            const totalProducts = productsWithStatus.length
+            const percentile = totalProducts > 0 ? index / totalProducts : 1
+            const qty = p.sold
+
             let status = "Tidak Layak"
-            if (qty >= 30) status = "Laris"
-            else if (qty >= 10) status = "Stabil"
-            else if (qty >= 1) status = "Kurang Laku"
+            let suggestion = "Tidak ada penjualan. Perlu evaluasi apakah produk masih relevan."
+            
+            const cost = p.cost || 0
+            const profitPerItem = p.price - cost
+            const totalProfit = profitPerItem * qty
+
+            if (p.price < cost || totalProfit < 0) {
+                status = "Rugi"
+                suggestion = "Harga jual di bawah modal atau margin negatif. Evaluasi ulang harga atau biaya."
+            } else if (percentile < 0.2) {
+                status = "Laris"
+                suggestion = "Performa sangat baik. Pertimbangkan untuk meningkatkan margin atau bundel."
+            } else if (percentile < 0.6) {
+                status = "Stabil"
+                suggestion = "Pemintaan pasar stabil. Jaga ketersediaan stok."
+            } else if (percentile < 0.9) {
+                status = "Kurang Laku"
+                suggestion = "Penjualan rendah. Buat promo khusus atau perbaiki deskripsi produk."
+            } else {
+                status = "Tidak Layak"
+                suggestion = "Tidak ada penjualan. Perlu evaluasi apakah produk masih relevan."
+            }
 
             return {
-                name: detail?.name || "Produk dihapus",
+                name: p.name,
                 sold: qty,
                 revenue: 0,
-                status
+                status,
+                suggestion
             }
-        })
+        }).slice(0, 5) // Return only top 5 for dashboard overview
 
         // Process sales history into daily buckets
         const days = ["Min", "Sen", "Sel", "Rab", "Kam", "Jum", "Sab"]

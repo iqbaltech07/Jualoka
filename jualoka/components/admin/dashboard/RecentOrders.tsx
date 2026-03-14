@@ -2,6 +2,7 @@ import Link from "next/link"
 import { ArrowUpRight, MessageCircle } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { StatusPill } from "./StatusPill"
+import { avatarColor, initials } from "../orders/ordersData"
 
 type RecentOrder = {
     id: string
@@ -31,8 +32,8 @@ export function RecentOrders({ orders }: { orders?: RecentOrder[] }) {
                         <p className="text-xs text-muted-foreground text-center py-4">Belum ada pesanan.</p>
                     ) : orders.map((order) => (
                         <div key={order.id} className="flex items-center gap-3">
-                            <div className="h-8 w-8 rounded-full bg-gradient-to-br from-primary/70 to-primary flex items-center justify-center text-white font-bold text-xs shrink-0">
-                                {order.customerName.charAt(0).toUpperCase()}
+                            <div className={`h-8 w-8 rounded-full bg-linear-to-br ${avatarColor(order.id)} flex items-center justify-center text-white font-bold text-xs shrink-0`}>
+                                {initials(order.customerName)}
                             </div>
                             <div className="flex-1 min-w-0">
                                 <div className="flex items-center gap-1.5">

@@ -6,7 +6,7 @@ export async function GET(req: Request) {
     try {
         const userId = await verifyAuth(req)
         const store = await prisma.store.findUnique({ where: { userId } })
-        
+
         if (!store) {
             return NextResponse.json({ message: "Store not found" }, { status: 404 })
         }
@@ -14,13 +14,13 @@ export async function GET(req: Request) {
         const storeId = store.id
         const url = new URL(req.url)
         const periodParam = url.searchParams.get("period") || "30d" // 7d, 30d, 90d
-        
+
         const days = periodParam === "7d" ? 7 : periodParam === "90d" ? 90 : 30
-        
+
         const now = new Date()
         const startDate = new Date(now)
         startDate.setDate(now.getDate() - days)
-        
+
         const prevStartDate = new Date(startDate)
         prevStartDate.setDate(startDate.getDate() - days)
 
@@ -43,14 +43,14 @@ export async function GET(req: Request) {
             include: { orderItems: true }
         })
 
-        const calculateRevenue = (orders: any[]) => 
+        const calculateRevenue = (orders: any[]) =>
             orders.reduce((sum, order) => sum + order.orderItems.reduce((s: number, item: any) => s + (item.price * item.quantity), 0), 0)
-        const calculateVolume = (orders: any[]) => 
+        const calculateVolume = (orders: any[]) =>
             orders.reduce((sum, order) => sum + order.orderItems.reduce((s: number, item: any) => s + item.quantity, 0), 0)
 
         const currentRevenue = calculateRevenue(currentOrders)
         const previousRevenue = calculateRevenue(previousOrders)
-        
+
         let revenueGrowth = 0
         if (previousRevenue === 0 && currentRevenue > 0) revenueGrowth = 100
         else if (previousRevenue > 0) revenueGrowth = Math.round(((currentRevenue - previousRevenue) / previousRevenue) * 100)
@@ -59,20 +59,20 @@ export async function GET(req: Request) {
         const totalOrders = currentOrders.length
         const averageOrderValue = totalOrders > 0 ? Math.round(currentRevenue / totalOrders) : 0
 
-        // Calculate a basic Health Score (0-100)
-        // Formula: Normalizing growth, order volume, and AOV into a score.
-        let healthScore = 50 // Base score
+        // for calculate a basic health score (0-100)
+        // growth, order volume, and AOV 
+        let healthScore = 50
         if (revenueGrowth > 0) healthScore += Math.min(revenueGrowth, 20)
         else healthScore += Math.max(revenueGrowth, -20)
-        if (totalOrders > (days / 2)) healthScore += 10 // At least 1 order every 2 days
-        if (totalOrders > days) healthScore += 20 // At least 1 order a day
-        healthScore = Math.max(0, Math.min(100, healthScore)) // Clamp to 0-100
-        
+        if (totalOrders > (days / 2)) healthScore += 10
+        if (totalOrders > days) healthScore += 20
+        healthScore = Math.max(0, Math.min(100, healthScore))
+
         let healthStatus = "Cukup"
         if (healthScore >= 80) healthStatus = "Sehat"
         else if (healthScore <= 40) healthStatus = "Buruk"
 
-        // 2. Product Analysis (Top & Worst)
+        // product analysis (top & worst)
         const productStats = await prisma.orderItem.groupBy({
             by: ["productId"],
             where: {
@@ -82,37 +82,94 @@ export async function GET(req: Request) {
             orderBy: { _sum: { quantity: "desc" } }
         })
 
-        // Fetch all products to know which ones sold 0
+        // Fetch previous product stats for trend calculation
+        const previousProductStats = await prisma.orderItem.groupBy({
+            by: ["productId"],
+            where: {
+                order: { storeId, status: "selesai", createdAt: { gte: prevStartDate, lt: startDate } }
+            },
+            _sum: { quantity: true }
+        })
+        const prevProductSalesMap = new Map((previousProductStats as any[]).map(ps => [ps.productId, ps._sum.quantity || 0]))
+
+        // Calculate consistency (number of distinct days sold)
+        const productDaysSold = new Map<string, Set<string>>()
+        currentOrders.forEach(order => {
+            const dateStr = new Date(order.createdAt).toDateString()
+            order.orderItems.forEach(item => {
+                const pId = item.productId
+                if (!productDaysSold.has(pId)) productDaysSold.set(pId, new Set())
+                productDaysSold.get(pId)!.add(dateStr)
+            })
+        })
+
+        // Fetch all products to know which ones sold 0, and include price and cost
         const allProducts = await prisma.product.findMany({
             where: { storeId },
-            select: { id: true, name: true }
+            select: { id: true, name: true, price: true, cost: true }
         })
 
         const productSalesMap = new Map((productStats as any[]).map(ps => [ps.productId, ps._sum.quantity || 0]))
-        
-        const productsWithStatus = allProducts.map(p => {
-            const sold = productSalesMap.get(p.id) || 0
-            
-            // Adjust threshold based on period length (PRD says 30 days = 30 laris)
-            // If 7 days, threshold is ~1/4. If 90 days, threshold is 3x.
-            const ratio = days / 30
-            const larisThreshold = Math.max(1, Math.round(30 * ratio))
-            const stabilThreshold = Math.max(1, Math.round(10 * ratio))
+
+        const sortedProducts = allProducts
+            .map(p => ({ ...p, sold: productSalesMap.get(p.id) || 0 }))
+            .sort((a, b) => b.sold - a.sold)
+
+        const productsWithStatus = sortedProducts.map((p, index) => {
+            const sold = p.sold
+            const totalProducts = sortedProducts.length
+
+            // 1. Rumus menentukan ranking penjualan produk (Percentile)
+            const percentile = totalProducts > 0 ? (index + 1) / totalProducts : 1
+
+            let ranking = "Tidak Layak"
+            if (percentile <= 0.2) {
+                ranking = "Laris"
+            } else if (percentile <= 0.6) {
+                ranking = "Stabil"
+            } else if (percentile <= 0.9) {
+                ranking = "Kurang Laku"
+            } else {
+                ranking = "Tidak Layak"
+            }
+
+            // 2. Rumus menentukan status performa produk
+            const cost = p.cost || 0
+            const profitPerItem = p.price - cost
+            const totalProfit = profitPerItem * sold
+
+            const prevSold = prevProductSalesMap.get(p.id) || 0
+            const trendDecreasing = prevSold > 0 && sold < prevSold
+
+            const daysSold = productDaysSold.get(p.id)?.size || 0
+            const consistent = daysSold > Math.max(1, days * 0.1) // minimal dijual di lebih dari 10% hari dalam periode
 
             let status = "Tidak Layak"
-            if (sold >= larisThreshold) status = "Laris"
-            else if (sold >= stabilThreshold) status = "Stabil"
-            else if (sold >= 1) status = "Kurang Laku"
+            let suggestion = "Tidak ada penjualan. Perlu evaluasi apakah produk masih relevan."
 
-            return { name: p.name, sold, status }
+            if (totalProfit < 0) {
+                status = "Rugi"
+                suggestion = "Total profit negatif. Evaluasi ulang harga jual atau biaya modal."
+            } else if (ranking === "Laris" && totalProfit > 0) {
+                status = "Laris"
+                suggestion = "Performa sangat baik. Pertimbangkan untuk meningkatkan margin atau bundel."
+            } else if ((ranking === "Stabil" || ranking === "Laris") && consistent) {
+                status = "Stabil"
+                suggestion = "Permintaan pasar stabil. Jaga ketersediaan stok."
+            } else if (ranking === "Kurang Laku" || trendDecreasing) {
+                status = "Kurang Laku"
+                suggestion = "Penjualan rendah atau trend menurun. Buat promo khusus atau perbaiki deskripsi produk."
+            } else {
+                status = "Tidak Layak"
+                suggestion = "Penjualan sangat rendah dan tidak konsisten. Perlu evaluasi relevansi produk."
+            }
+
+            return { name: p.name, sold, ranking, status, suggestion }
         })
 
         const topProducts = [...productsWithStatus].sort((a, b) => b.sold - a.sold).slice(0, 5)
         const worstProducts = [...productsWithStatus].sort((a, b) => a.sold - b.sold).slice(0, 5)
 
-        // 3. Customer Insight
-        // Since we don't have a hardcore user auth for customers, we'll try to use customerName or customerWhatsapp
-        // Find unique customers in current period
         const customerOrders = new Map<string, number>()
         currentOrders.forEach(order => {
             const key = order.customerWhatsapp || order.customerName || "Anonymous"
@@ -128,21 +185,20 @@ export async function GET(req: Request) {
         })
         const repeatRate = totalCustomers > 0 ? Math.round((repeatCustomers / totalCustomers) * 100) : 0
 
-        // 4. Sales Trend for the Chart Formatter (Daily buckets for 7d/30d, Weekly for 90d)
         const salesTrend = []
         if (days === 7 || days === 30) {
             for (let i = days - 1; i >= 0; i--) {
                 const d = new Date(now)
                 d.setDate(d.getDate() - i)
-                d.setHours(0,0,0,0)
+                d.setHours(0, 0, 0, 0)
                 const nextD = new Date(d)
                 nextD.setDate(d.getDate() + 1)
-                
+
                 const dayOrders = currentOrders.filter(o => {
                     const od = new Date(o.createdAt)
                     return od >= d && od < nextD
                 })
-                
+
                 salesTrend.push({
                     date: d.toLocaleDateString("id-ID", { day: "numeric", month: "short" }),
                     revenue: calculateRevenue(dayOrders),
@@ -150,18 +206,17 @@ export async function GET(req: Request) {
                 })
             }
         } else {
-             // For 90d we can just group by week roughly, but to keep it simple let's do 15 points (every 6 days)
-             const interval = 6
-             for (let i = 14; i >= 0; i--) {
+            const interval = 6
+            for (let i = 14; i >= 0; i--) {
                 const d = new Date(now)
                 d.setDate(d.getDate() - (i * interval))
-                
+
                 salesTrend.push({
                     date: d.toLocaleDateString("id-ID", { day: "numeric", month: "short" }),
                     revenue: Math.round(currentRevenue / 15), // Placeholder simplification for 90d to prevent loop complex
                     orders: Math.round(totalOrders / 15)
                 })
-             }
+            }
         }
 
         const dashboardData = {

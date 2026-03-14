@@ -4,6 +4,7 @@ import { useState, useEffect } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { ArrowLeft, ImagePlus } from "lucide-react"
+import { toast } from "sonner"
 
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -84,7 +85,7 @@ export default function ProductFormPage({
         const file = e.target.files?.[0]
         if (file) {
             if (!file.type.startsWith("image/")) {
-                alert("Hanya file gambar yang diperbolehkan.")
+                toast.error("Hanya file gambar yang diperbolehkan.")
                 return
             }
             setImageFile(file)
@@ -115,7 +116,7 @@ export default function ProductFormPage({
                     finalImageUrl = uploadData.url
                 } else {
                     const errorData = await uploadRes.json()
-                    alert(errorData.message || "Gagal mengunggah foto produk.")
+                    toast.error(errorData.message || "Gagal mengunggah foto produk.")
                     setIsLoading(false)
                     return // Stop form submission if upload fails
                 }
@@ -141,15 +142,15 @@ export default function ProductFormPage({
             })
 
             if (res.ok) {
-                 alert(`Produk berhasil di${isEdit ? "perbarui" : "tambahkan"}!`)
+                 toast.success(`Produk berhasil di${isEdit ? "perbarui" : "tambahkan"}!`)
                  router.push("/admin/products")
             } else {
                  const data = await res.json()
-                 alert(data.message || "Gagal menyimpan produk.")
+                 toast.error(data.message || "Gagal menyimpan produk.")
             }
         } catch (error) {
              console.error("Error saving product", error)
-             alert("Terjadi kesalahan koneksi.")
+             toast.error("Terjadi kesalahan koneksi.")
         } finally {
              setIsLoading(false)
         }
@@ -189,7 +190,7 @@ export default function ProductFormPage({
                                     className="hidden" 
                                 />
                                 {imagePreview ? (
-                                    <div className="relative w-full aspect-[4/3] rounded-lg overflow-hidden">
+                                    <div className="relative w-full aspect-4/3 rounded-lg overflow-hidden">
                                         <img src={imagePreview} alt="Preview" className="w-full h-full object-cover" />
                                         <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
                                             <p className="text-white text-sm font-medium flex items-center gap-2">

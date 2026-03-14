@@ -15,18 +15,18 @@ datasource db {
 }
 
 model User {
-  id            String    @id @default(cuid())
+  id            String   @id @default(cuid())
   name          String
-  email         String    @unique
+  email         String   @unique
   emailVerified Boolean
   passwordHash  String? // Retained if needed, but better auth uses Account
   image         String?
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 
-  sessions      Session[]
-  accounts      Account[]
-  store         Store?
+  sessions Session[]
+  accounts Account[]
+  store    Store?
 }
 
 model Session {
@@ -68,60 +68,32 @@ model Verification {
 }
 
 model Store {
-  id             String @id @default(cuid())
-  userId         String @unique
-  user           User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id             String  @id @default(cuid())
+  userId         String  @unique
+  user           User    @relation(fields: [userId], references: [id], onDelete: Cascade)
   name           String
-  slug           String @unique
+  slug           String  @unique
   whatsappNumber String
-  isOpen         Boolean @default(true)  // Cross-device store status
+  isOpen         Boolean @default(true)
 
-  // Banner Kustomisasi Fields
   bannerEnabled  Boolean @default(true)
-  bannerBadge    String?
-  bannerTitle    String?
-  bannerDesc     String?
-  bannerTheme    String  @default("green")
-  bannerGradient String?
-  bannerImageUrl String?
+  bannerBadge    String? @default("Toko Online Resmi")
+  bannerTitle    String? @default("Temukan Produk Terbaik\nKualitas Terjamin")
+  bannerDesc     String? @default("Selamat datang di toko kami! Pesan sekarang dengan mudah dan aman langsung via WhatsApp.")
+  bannerTheme    String  @default("blue")
+  bannerGradient String? @default("from-[#1d4ed8] to-[#3b82f6]")
+  bannerImageUrl String? @default("https://images.unsplash.com/photo-1472851294608-062f824d29cc?q=80&w=1000&auto=format&fit=crop")
   bannerLayout   String  @default("left")
   bannerOpacity  Int     @default(10)
 
-  category  String? // Kategori Toko
+  category String?
 
-  products  Product[]
-  orders    Order[]
-  carts     Cart[]
-  
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
-}
+  products Product[]
+  orders   Order[]
 
-model Cart {
-  id        String     @id @default(cuid())
-  sessionId String     @unique // Digunakan untuk tracking cart guest
-  storeId   String
-  store     Store      @relation(fields: [storeId], references: [id], onDelete: Cascade)
-  items     CartItem[]
-  createdAt DateTime   @default(now())
-  updatedAt DateTime   @updatedAt
-
-  @@index([sessionId])
-}
-
-model CartItem {
-  id        String   @id @default(cuid())
-  cartId    String
-  cart      Cart     @relation(fields: [cartId], references: [id], onDelete: Cascade)
-  productId String
-  product   Product  @relation(fields: [productId], references: [id], onDelete: Restrict)
-  quantity  Int      @default(1)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-  
-  @@unique([cartId, productId])
 }
-
 
 model Product {
   id          String      @id @default(cuid())
@@ -134,7 +106,6 @@ model Product {
   image       String?
   stock       Int         @default(0)
   orderItems  OrderItem[]
-  cartItems   CartItem[]
   createdAt   DateTime    @default(now())
   updatedAt   DateTime    @updatedAt
 }
@@ -157,5 +128,5 @@ model OrderItem {
   productId String
   product   Product @relation(fields: [productId], references: [id], onDelete: Restrict)
   quantity  Int
-  price     Int // Price at the time of order
+  price     Int
 }

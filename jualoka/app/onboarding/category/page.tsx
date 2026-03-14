@@ -12,11 +12,13 @@ const STEPS = [
 ]
 
 const CATEGORY_DESCRIPTIONS: Record<StoreCategory, string> = {
-    Makanan: "Kuliner, snack, katering, bumbu masak",
-    Minuman: "Minuman kemasan, kopi, jus, herbal",
-    Fashion: "Pakaian, aksesori, tas, sepatu",
-    Kerajinan: "Kerajinan tangan, dekorasi, seni",
-    Kecantikan: "Skincare, kosmetik, perawatan diri",
+    "Makanan & Minuman": "Kuliner, snack, katering, minuman",
+    "Fashion & Pakaian": "Baju, celana, tas, sepatu, aksesori",
+    "Kecantikan & Kesehatan": "Skincare, kosmetik, suplemen, nutrisi",
+    "Kerajinan & Seni": "Karya tangan, hiasan dinding, dekorasi",
+    "Elektronik & Gadget": "Aksesoris HP, komputer, alat listrik",
+    "Jasa & Layanan": "Servis mesin, les privat, laundry",
+    "Lainnya": "Produk atau layanan lainnya",
 }
 
 export default function OnboardingCategoryPage() {

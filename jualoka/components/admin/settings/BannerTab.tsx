@@ -2,6 +2,7 @@
 
 import { useState, startTransition, useEffect } from "react"
 import { Eye, RotateCcw, Save, Type, Palette, Layout, ImageIcon, Info } from "lucide-react"
+import { toast } from "sonner"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import {
     BannerConfig,
@@ -9,24 +10,22 @@ import {
 } from "@/lib/bannerStore"
 import { BannerPreview } from "@/components/admin/shared/BannerPreview"
 import { ThemePicker } from "@/components/admin/shared/ThemePicker"
-import { Toast } from "@/components/admin/shared/Toast"
 
 const INPUT = "w-full rounded-xl border border-border bg-[#f8fafb] px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all placeholder:text-muted-foreground/50"
 
 export function BannerTab() {
     const [config, setConfig] = useState<BannerConfig>({
         enabled: true,
-        badge: "Produk UMKM Pilihan",
-        title: "Produk Segar & Lezat\nLangsung dari Dapur Kami",
-        description: "Pesan sekarang dan dapatkan langsung via WhatsApp. Nikmati kelezatan khas UMKM lokal!",
-        theme: "green",
-        customGradient: "from-[#1a7035] to-[#2ea855]",
-        imageUrl: "https://images.unsplash.com/photo-1596040033229-a9821ebd058d?q=80&w=1000&auto=format&fit=crop",
+        badge: "Toko Online Resmi",
+        title: "Temukan Produk Terbaik\nKualitas Terjamin",
+        description: "Selamat datang di toko kami! Pesan sekarang dengan mudah dan aman langsung via WhatsApp.",
+        theme: "blue",
+        customGradient: "from-[#1d4ed8] to-[#3b82f6]",
+        imageUrl: "https://images.unsplash.com/photo-1472851294608-062f824d29cc?q=80&w=1000&auto=format&fit=crop",
         layout: "left",
         imageOpacity: 10,
     })
     const [showPreview, setShowPreview] = useState(true)
-    const [toast, setToast] = useState(false)
     const [isLoading, setIsLoading] = useState(true)
     const [isSaving, setIsSaving] = useState(false)
     const [imageFile, setImageFile] = useState<File | null>(null)
@@ -71,7 +70,7 @@ export function BannerTab() {
         const file = e.target.files?.[0]
         if (file) {
             if (!file.type.startsWith("image/")) {
-                alert("Hanya file gambar yang diperbolehkan.")
+                toast.error("Hanya file gambar yang diperbolehkan.")
                 return
             }
             setImageFile(file)
@@ -108,7 +107,7 @@ export function BannerTab() {
                     patch("imageUrl", finalImageUrl) 
                 } else {
                     const err = await uploadRes.json()
-                    alert(err.message || "Gagal mengunggah foto.")
+                    toast.error(err.message || "Gagal mengunggah foto.")
                     setIsSaving(false)
                     return
                 }
@@ -133,17 +132,16 @@ export function BannerTab() {
             })
 
             if (res.ok) {
-                setToast(true)
+                toast.success("Banner berhasil disimpan! ✨")
                 // Clear the file since we now have the permanent URL
                 setImageFile(null) 
                 setPreviewUrl(finalImageUrl)
-                setTimeout(() => setToast(false), 2800)
             } else {
-                alert("Gagal menyimpan banner")
+                toast.error("Gagal menyimpan banner")
             }
         } catch (error) {
             console.error("Save banner error", error)
-            alert("Terjadi kesalahan koneksi.")
+            toast.error("Terjadi kesalahan koneksi.")
         } finally {
             setIsSaving(false)
         }
@@ -153,11 +151,11 @@ export function BannerTab() {
         startTransition(() => {
             const defaultBanner: BannerConfig = {
                 enabled: true,
-                badge: "Produk UMKM Pilihan",
-                title: "Produk Segar & Lezat\nLangsung dari Dapur Kami",
-                description: "Pesan sekarang dan dapatkan langsung via WhatsApp. Nikmati kelezatan khas UMKM lokal!",
-                theme: "green",
-                customGradient: "from-[#1a7035] to-[#2ea855]",
+                badge: "Toko Online Resmi",
+                title: "Temukan Produk Terbaik\nKualitas Terjamin",
+                description: "Selamat datang di toko kami! Pesan sekarang dengan mudah dan aman langsung via WhatsApp.",
+                theme: "blue",
+                customGradient: "from-[#1d4ed8] to-[#3b82f6]",
                 imageUrl: "",
                 layout: "left",
                 imageOpacity: 10,
@@ -251,7 +249,7 @@ export function BannerTab() {
                     <CardContent className="px-5 pb-5 flex flex-col gap-4">
                         <div className="flex flex-col gap-1.5">
                             <label className="text-xs font-semibold text-foreground/80">Teks Badge (opsional)</label>
-                            <input type="text" className={INPUT} placeholder="Produk UMKM Pilihan" value={config.badge} onChange={(e) => patch("badge", e.target.value)} maxLength={40} />
+                            <input type="text" className={INPUT} placeholder="Toko Online Resmi" value={config.badge} onChange={(e) => patch("badge", e.target.value)} maxLength={40} />
                         </div>
                         <div className="flex flex-col gap-1.5">
                             <label className="text-xs font-semibold text-foreground/80">Judul Utama</label>
@@ -278,7 +276,7 @@ export function BannerTab() {
                             {config.theme === "custom" && (
                                 <div className="flex flex-col gap-1.5">
                                     <label className="text-xs font-semibold text-foreground/80">Kelas Gradient (Tailwind)</label>
-                                    <input type="text" className={INPUT} placeholder="from-[#1a7035] to-[#2ea855]" value={config.customGradient} onChange={(e) => patch("customGradient", e.target.value)} />
+                                    <input type="text" className={INPUT} placeholder="from-[#1d4ed8] to-[#3b82f6]" value={config.customGradient} onChange={(e) => patch("customGradient", e.target.value)} />
                                 </div>
                             )}
                         </CardContent>
@@ -369,8 +367,6 @@ export function BannerTab() {
                     </div>
                 </CardContent>
             </Card>
-
-            <Toast visible={toast} message="Banner berhasil disimpan! ✨" />
         </div>
     )
 }

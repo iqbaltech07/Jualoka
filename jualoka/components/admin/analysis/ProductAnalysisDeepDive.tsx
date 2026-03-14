@@ -7,7 +7,9 @@ import { cn } from "@/lib/utils"
 interface Product {
     name: string
     sold: number
+    ranking?: string
     status: string
+    suggestion?: string
 }
 
 interface ProductAnalysisDeepDiveProps {
@@ -17,10 +19,11 @@ interface ProductAnalysisDeepDiveProps {
 }
 
 const STATUS_CONFIG: Record<string, { bg: string; text: string; dot: string; border: string }> = {
-    "Laris":       { bg: "bg-emerald-50", text: "text-emerald-700", dot: "bg-emerald-500", border: "border-emerald-100" },
-    "Stabil":      { bg: "bg-blue-50",    text: "text-blue-700",    dot: "bg-blue-500",    border: "border-blue-100"   },
-    "Kurang Laku": { bg: "bg-amber-50",   text: "text-amber-700",   dot: "bg-amber-400",   border: "border-amber-100"  },
-    "Tidak Layak": { bg: "bg-rose-50",    text: "text-rose-700",    dot: "bg-rose-500",    border: "border-rose-100"   },
+    "Laris": { bg: "bg-emerald-50", text: "text-emerald-700", dot: "bg-emerald-500", border: "border-emerald-100" },
+    "Stabil": { bg: "bg-blue-50", text: "text-blue-700", dot: "bg-blue-500", border: "border-blue-100" },
+    "Kurang Laku": { bg: "bg-amber-50", text: "text-amber-700", dot: "bg-amber-400", border: "border-amber-100" },
+    "Tidak Layak": { bg: "bg-rose-50", text: "text-rose-700", dot: "bg-rose-500", border: "border-rose-100" },
+    "Rugi": { bg: "bg-red-50", text: "text-red-800", dot: "bg-red-600", border: "border-red-300" },
 }
 
 function ProductRow({ product, rank, isWorst = false }: { product: Product; rank: number; isWorst?: boolean }) {
@@ -33,9 +36,15 @@ function ProductRow({ product, rank, isWorst = false }: { product: Product; rank
             )}>{rank}</span>
             <div className="flex-1 min-w-0">
                 <p className="text-xs font-bold text-zinc-800 truncate">{product.name}</p>
-                <p className="text-[10px] text-zinc-400">{product.sold} terjual</p>
+                <div className="flex items-center gap-2 mb-1">
+                    <p className="text-[10px] font-medium text-zinc-500 bg-zinc-100 px-1.5 py-0.5 rounded">{product.sold} terjual</p>
+                    {product.ranking && <p className="text-[10px] font-medium text-zinc-500 bg-zinc-100 px-1.5 py-0.5 rounded">Ranking: {product.ranking}</p>}
+                </div>
+                {product.suggestion && (
+                    <p className="text-[10px] text-zinc-500 mt-0.5 leading-snug">💡 {product.suggestion}</p>
+                )}
             </div>
-            <div className={cn("flex items-center gap-1.5 px-2 py-1 rounded-lg text-[10px] font-bold border", cfg.bg, cfg.text, cfg.border)}>
+            <div className={cn("flex items-center gap-1.5 px-2 py-1 rounded-lg text-[10px] font-bold border shrink-0", cfg.bg, cfg.text, cfg.border)}>
                 <span className={cn("h-1.5 w-1.5 rounded-full", cfg.dot)} />
                 {product.status}
             </div>

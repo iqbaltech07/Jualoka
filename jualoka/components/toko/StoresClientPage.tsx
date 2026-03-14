@@ -14,13 +14,17 @@ export function StoresClientPage({ stores }: { stores: StoreCardData[] }) {
 
     const filtered = useMemo(() => {
         return stores.filter((store) => {
-            const matchesCategory = activeCategory === "Semua" || store.category === activeCategory
+            const categoryMatch = activeCategory === "Semua" ||
+                store.category.toLowerCase().includes(activeCategory.toLowerCase()) ||
+                activeCategory.toLowerCase().includes(store.category.toLowerCase())
+
             const q = query.toLowerCase()
             const matchesQuery =
                 !q ||
                 store.name.toLowerCase().includes(q) ||
                 store.category.toLowerCase().includes(q)
-            return matchesCategory && matchesQuery
+
+            return categoryMatch && matchesQuery
         })
     }, [query, activeCategory, stores])
 

@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect, use, useRef } from "react"
-import { getCart, updateCartQuantity, removeFromCart, CartItem } from "@/lib/cartApi"
+import { getCart, updateCartQuantity, removeFromCart, clearCart, CartItem } from "@/lib/cartApi"
 import Link from "next/link"
 import { ArrowLeft, Minus, Plus, Trash2, ShoppingBag, MessageCircle, AlertCircle } from "lucide-react"
 import { Button } from "@/components/ui/button"
@@ -38,40 +38,39 @@ export default function CartPage({
             }
             setMounted(true)
         }
+        
         loadCart()
-    }, [slug])
+
+        const handleUpdate = async () => {
+            if (storeId) {
+                const cartData = await getCart(storeId)
+                setItems(cartData)
+            }
+        }
+        window.addEventListener("cartUpdated", handleUpdate)
+        return () => window.removeEventListener("cartUpdated", handleUpdate)
+    }, [slug, storeId])
 
     const update = async (id: string, delta: number) => {
+        if (!storeId) return
         const item = items.find(it => it.id === id)
         if (!item) return
 
         const newQty = item.quantity + delta
+        
+        // Prevent exceeding stock limit
+        if (newQty > item.stock) return
+
         if (newQty <= 0) {
-            setItems(prev => prev.filter(it => it.id !== id))
-            // Clear any pending debounced update for this item
-            if (debounceTimeouts.current[id]) {
-                clearTimeout(debounceTimeouts.current[id])
-                delete debounceTimeouts.current[id]
-            }
-            await removeFromCart(id)
+            await removeFromCart(storeId, id)
         } else {
-            setItems(prev => prev.map(it => it.id === id ? { ...it, quantity: newQty } : it))
-            
-            // Debounce the API call
-            if (debounceTimeouts.current[id]) {
-                clearTimeout(debounceTimeouts.current[id])
-            }
-            
-            debounceTimeouts.current[id] = setTimeout(async () => {
-                await updateCartQuantity(id, newQty)
-                delete debounceTimeouts.current[id]
-            }, 500) // 500ms debounce
+            await updateCartQuantity(storeId, id, newQty)
         }
     }
 
     const remove = async (id: string) => {
-        setItems((prev) => prev.filter((it) => it.id !== id))
-        await removeFromCart(id)
+        if (!storeId) return
+        await removeFromCart(storeId, id)
     }
 
     const total = items.reduce((acc, it) => acc + it.price * it.quantity, 0)
@@ -120,8 +119,8 @@ export default function CartPage({
             })
             msg += `\n*Total: Rp ${total.toLocaleString("id-ID")}*\n\nMohon info selanjutnya. Terima kasih 🙏`
 
-            // hapus cart dari backend
-            await fetch("/api/cart?clearAll=true", { method: "DELETE" })
+            // hapus cart secara lokal
+            await clearCart(store.id)
             setItems([])
 
             // redirect ke halaman success
@@ -184,9 +183,17 @@ export default function CartPage({
                     <div className="lg:col-span-3 space-y-3">
                         {items.map((item) => (
                             <div key={item.id} className="bg-white rounded-2xl p-4 sm:p-5 border border-border/50 shadow-sm hover:shadow-md transition-shadow flex gap-4 items-center">
-                                <div className="h-14 w-14 rounded-xl bg-gradient-to-br from-primary/10 to-primary/20 flex items-center justify-center text-primary font-bold text-xl flex-shrink-0">
-                                    {item.name.charAt(0)}
-                                </div>
+                                {item.image ? (
+                                    <img 
+                                        src={item.image} 
+                                        alt={item.name} 
+                                        className="h-14 w-14 rounded-xl object-cover flex-shrink-0 border border-border/50" 
+                                    />
+                                ) : (
+                                    <div className="h-14 w-14 rounded-xl bg-gradient-to-br from-primary/10 to-primary/20 flex items-center justify-center text-primary font-bold text-xl shrink-0">
+                                        {item.name.charAt(0)}
+                                    </div>
+                                )}
                                 <div className="flex-1 min-w-0">
                                     <p className="font-semibold text-sm truncate">{item.name}</p>
                                     <p className="text-muted-foreground text-xs mt-0.5">Rp {item.price.toLocaleString("id-ID")} / pcs</p>
@@ -196,7 +203,10 @@ export default function CartPage({
                                         <Minus className="h-3 w-3" />
                                     </button>
                                     <span className="w-6 text-center text-sm font-semibold">{item.quantity}</span>
-                                    <button onClick={() => update(item.id, 1)} className="h-7 w-7 rounded-lg border border-border bg-background flex items-center justify-center hover:border-primary hover:text-primary transition-colors">
+                                    <button 
+                                        onClick={() => update(item.id, 1)} 
+                                        disabled={item.quantity >= item.stock}
+                                        className="h-7 w-7 rounded-lg border border-border bg-background flex items-center justify-center hover:border-primary hover:text-primary transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
                                         <Plus className="h-3 w-3" />
                                     </button>
                                 </div>
