@@ -132,7 +132,7 @@ export function StoreInfoTab() {
                             </Label>
                             <div className={`flex items-center rounded-xl border border-input overflow-hidden focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2 ${!isEditing ? "opacity-60" : ""}`}>
                                 <span className="text-muted-foreground text-sm bg-muted px-3 h-11 flex items-center border-r border-input whitespace-nowrap shrink-0">
-                                    jualoka.com/toko/
+                                    {process.env.NEXT_PUBLIC_APP_URL?.replace(/^https?:\/\//, '')}/toko/
                                 </span>
                                 <input
                                     id="slug"
@@ -145,7 +145,7 @@ export function StoreInfoTab() {
                                 <button
                                     type="button"
                                     onClick={() => {
-                                        navigator.clipboard.writeText(`jualoka.com/toko/${slug}`)
+                                        navigator.clipboard.writeText(`${process.env.NEXT_PUBLIC_APP_URL?.replace(/^https?:\/\//, '')}/toko/${slug}`)
                                         setCopied(true)
                                         setTimeout(() => setCopied(false), 2000)
                                     }}

@@ -44,7 +44,7 @@ export default function LoginPage() {
         if (!validate()) return
 
         setIsLoading(true)
-        
+
         try {
             const { data, error } = await authClient.signIn.email({
                 email,
@@ -52,10 +52,10 @@ export default function LoginPage() {
             })
 
             if (error) {
-                 setServerError(error.message || "Email atau password salah.")
-                 setIsLoading(false)
-                 // NOTE: If they required verification, better-auth might return specific error code
-                 return
+                setServerError(error.message || "Email atau password salah.")
+                setIsLoading(false)
+                // NOTE: If they required verification, better-auth might return specific error code
+                return
             }
 
             // Successfully logged in via better-auth
@@ -66,31 +66,22 @@ export default function LoginPage() {
                 router.push("/onboarding/category")
                 return
             }
-            
+
             const storeData = await storeRes.json()
             const store = storeData.store
 
             // Check if user has completed store onboarding (has category)
             if (store && !store.category) {
-                 router.push("/onboarding/category")
+                router.push("/onboarding/category")
             } else if (!store) {
-                 router.push("/onboarding/category") // Fallback just in case
+                router.push("/onboarding/category") // Fallback just in case
             } else {
-                 router.push("/admin")
+                router.push("/admin")
             }
         } catch (error) {
             console.error("Login Error", error)
             setServerError("Terjadi kesalahan koneksi.")
             setIsLoading(false)
-        }
-    }
-
-    function handleModeSwitch(newMode: Mode) {
-        setMode(newMode)
-        setErrors({})
-        setServerError("")
-        if (newMode === "register") {
-            router.push("/auth/register")
         }
     }
 

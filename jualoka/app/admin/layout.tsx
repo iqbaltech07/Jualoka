@@ -111,7 +111,7 @@ function OrderNotifier() {
             }
         })
 
-        es.onerror = () => {}
+        es.onerror = () => { }
 
         return () => es.close()
     }, [isOrdersPage])
