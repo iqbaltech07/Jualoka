@@ -8,6 +8,8 @@ import { StoreHealth } from "@/components/admin/dashboard/StoreHealth"
 
 import { headers } from "next/headers"
 
+export const dynamic = "force-dynamic"
+
 function getBaseUrl() {
     if (process.env.NEXT_PUBLIC_APP_URL) return process.env.NEXT_PUBLIC_APP_URL
     return `http://localhost:${process.env.PORT || 3000}`
