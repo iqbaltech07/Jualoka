@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Store, Phone, Link2, CheckCircle2, Pencil } from "lucide-react"
+import { Store, Phone, Link2, CheckCircle2, Pencil, Copy, Check } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -14,6 +14,7 @@ import { useRouter } from "next/navigation"
 
 export function StoreInfoTab() {
     const router = useRouter()
+    const [copied, setCopied] = useState(false)
     const [isEditing, setIsEditing] = useState(true)
     const [isDeleting, setIsDeleting] = useState(false)
     const [storeName, setStoreName] = useState("")
@@ -83,9 +84,9 @@ export function StoreInfoTab() {
             confirmButtonText: "Ya, Hapus Toko!",
             cancelButtonText: "Batal"
         })
-        
+
         if (!result.isConfirmed) return
-        
+
         setIsDeleting(true)
         try {
             const res = await fetch("/api/stores", {
@@ -130,8 +131,29 @@ export function StoreInfoTab() {
                                 URL Toko
                             </Label>
                             <div className={`flex items-center rounded-xl border border-input overflow-hidden focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2 ${!isEditing ? "opacity-60" : ""}`}>
-                                <span className="text-muted-foreground text-sm bg-muted px-3 h-11 flex items-center border-r border-input whitespace-nowrap shrink-0">jualoka.com/toko/</span>
-                                <input id="slug" className="flex-1 h-11 px-3 text-sm outline-none bg-background disabled:cursor-not-allowed" placeholder="nama-toko" value={slug} onChange={e => setSlug(e.target.value)} disabled={!isEditing} />
+                                <span className="text-muted-foreground text-sm bg-muted px-3 h-11 flex items-center border-r border-input whitespace-nowrap shrink-0">
+                                    jualoka.com/toko/
+                                </span>
+                                <input
+                                    id="slug"
+                                    className="flex-1 h-11 px-3 text-sm outline-none bg-background disabled:cursor-not-allowed"
+                                    placeholder="nama-toko"
+                                    value={slug}
+                                    onChange={(e) => setSlug(e.target.value)}
+                                    disabled={!isEditing}
+                                />
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        navigator.clipboard.writeText(`jualoka.com/toko/${slug}`)
+                                        setCopied(true)
+                                        setTimeout(() => setCopied(false), 2000)
+                                    }}
+                                    className="px-3 h-11 border-l border-input bg-muted hover:bg-muted/80 transition-colors shrink-0"
+                                    title="Salin URL"
+                                >
+                                    {copied ? <Check className="h-4 w-4 text-primary" /> : <Copy className="h-4 w-4 text-muted-foreground" />}
+                                </button>
                             </div>
                         </div>
 
@@ -152,10 +174,10 @@ export function StoreInfoTab() {
                                 <Store className="h-3.5 w-3.5 text-muted-foreground" />
                                 Kategori Toko
                             </Label>
-                            <select 
-                                id="category" 
-                                value={category} 
-                                onChange={e => setCategory(e.target.value as StoreCategory)} 
+                            <select
+                                id="category"
+                                value={category}
+                                onChange={e => setCategory(e.target.value as StoreCategory)}
                                 disabled={!isEditing}
                                 className="w-full h-11 px-3 text-sm rounded-xl border border-input bg-background outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:opacity-60 disabled:cursor-not-allowed appearance-none"
                             >
@@ -188,9 +210,9 @@ export function StoreInfoTab() {
                         <p className="text-sm font-medium">Hapus Toko</p>
                         <p className="text-xs text-muted-foreground">Tindakan ini tidak dapat dibatalkan.</p>
                     </div>
-                    <Button 
-                        variant="destructive" 
-                        size="sm" 
+                    <Button
+                        variant="destructive"
+                        size="sm"
                         className="rounded-xl shrink-0"
                         onClick={handleStoreDelete}
                         disabled={isDeleting}

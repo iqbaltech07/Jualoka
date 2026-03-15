@@ -69,7 +69,7 @@ export default function Navbar() {
 
             {/* Mobile menu */}
             {isOpen && (
-                <div className="md:hidden bg-white/95 backdrop-blur-md border-t border-black/5 px-5 py-4 flex flex-col gap-3">
+                <div className="md:hidden bg-white/80 backdrop-blur-md border-t border-black/5 px-5 py-4 flex flex-col gap-3">
                     {NAV_LINKS.map((link) => (
                     <a    
                         key = { link.href }
