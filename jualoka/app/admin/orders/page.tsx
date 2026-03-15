@@ -51,48 +51,57 @@ export default function AdminOrdersPage() {
     const [query, setQuery] = useState("")
     const [filterStatus, setFilterStatus] = useState<OrderStatus | "semua">("semua")
 
-    useEffect(() => {
-        async function fetchOrders() {
-            try {
-                const res = await fetch("/api/orders", { credentials: "include" })
-                if (!res.ok) return
+    const fetchOrders = async () => {
+        setIsLoading(true)
+        try {
+            // Bypass browser cache completely
+            const res = await fetch(`/api/orders?_t=${Date.now()}`, { 
+                credentials: "include",
+                cache: "no-store",
+                headers: {
+                    "Pragma": "no-cache",
+                    "Cache-Control": "no-cache"
+                }
+            })
+            if (!res.ok) return
 
-                const data = await res.json()
+            const data = await res.json()
 
-                // Map API shape to Order shape that OrderCard expects
-                const mapped: Order[] = (data.orders || []).map((o: any) => ({
-                    id: o.id,
-                    orderNumber: `ORD-${String(o.orderNumber).padStart(3, "0")}`,
-                    customer: o.customerName,
-                    phone: o.customerWhatsapp,
-                    status: o.status as OrderStatus,
-                    date: o.createdAt,
-                    total: o.orderItems.reduce((s: number, i: any) => s + i.price * i.quantity, 0),
-                    items: o.orderItems.map((i: any) => ({
-                        id: i.id,
-                        name: i.product?.name ?? "Produk",
-                        qty: i.quantity,
-                        price: i.price,
-                    })),
-                }))
+            // Map API shape to Order shape that OrderCard expects
+            const mapped: Order[] = (data.orders || []).map((o: any) => ({
+                id: o.id,
+                orderNumber: `ORD-${String(o.orderNumber).padStart(3, "0")}`,
+                customer: o.customerName,
+                phone: o.customerWhatsapp,
+                status: o.status as OrderStatus,
+                date: o.createdAt,
+                total: o.orderItems.reduce((s: number, i: any) => s + i.price * i.quantity, 0),
+                items: o.orderItems.map((i: any) => ({
+                    id: i.id,
+                    name: i.product?.name ?? "Produk",
+                    qty: i.quantity,
+                    price: i.price,
+                })),
+            }))
 
-                setOrders(mapped)
-            } catch (err) {
-                console.error("Failed to load orders", err)
-            } finally {
-                setIsLoading(false)
-            }
+            setOrders(mapped)
+        } catch (err) {
+            console.error("Failed to load orders", err)
+        } finally {
+            setIsLoading(false)
         }
+    }
+
+    useEffect(() => {
         fetchOrders()
     }, [])
 
-    // ── Real-time via SSE ──────────────────────────────────────────────────
+    // ── Respon ke Event Global dari Layout ───────────────────────────────────
     useEffect(() => {
-        const es = new EventSource("/api/orders/notify", { withCredentials: true })
-
-        es.addEventListener("new_order", (e) => {
-            try {
-                const raw = JSON.parse(e.data)
+        const handleRefresh = ((e: CustomEvent) => {
+            // Jika ada payload data baru dari SSE, langsung tambahkan ke state
+            if (e.detail) {
+                const raw = e.detail
                 const newOrder: Order = {
                     id: raw.id,
                     orderNumber: `ORD-${String(raw.orderNumber || 0).padStart(3, "0")}`,
@@ -108,25 +117,19 @@ export default function AdminOrdersPage() {
                         price: i.price,
                     })),
                 }
-                setOrders(prev => [newOrder, ...prev])
-                toast.success("Pesanan baru masuk! 🛍️", {
-                    description: `Dari ${raw.customerName} · ${newOrder.items.length} item`,
-                    duration: 8000,
-                    action: {
-                        label: "Lihat",
-                        onClick: () => window.scrollTo({ top: 0, behavior: "smooth" }),
-                    },
+                setOrders(prev => {
+                    // Cegah duplikasi jika order sudah ada
+                    if (prev.some(o => o.id === newOrder.id)) return prev
+                    return [newOrder, ...prev]
                 })
-            } catch (err) {
-                console.error("SSE parse error", err)
+            } else {
+                // Fallback jika tidak ada payload
+                fetchOrders()
             }
-        })
+        }) as EventListener
 
-        es.onerror = () => {
-            // EventSource will auto-reconnect, nothing to do
-        }
-
-        return () => es.close()
+        window.addEventListener("refreshOrders", handleRefresh)
+        return () => window.removeEventListener("refreshOrders", handleRefresh)
     }, [])
 
     const stats = useMemo(() => {

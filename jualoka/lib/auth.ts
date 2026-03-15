@@ -62,7 +62,21 @@ export const auth = betterAuth({
             }
         }
     },
-    trustedOrigins: ["http://localhost:3000", "https://jualoka.my.id", "https://www.jualoka.my.id"],
+    baseURL: process.env.BETTER_AUTH_URL || process.env.NEXT_PUBLIC_APP_URL,
+    trustedOrigins: (request) => {
+        const origin = request?.headers.get("origin") || "";
+        const allowed = [
+            "http://localhost:3000",
+            "https://jualoka.my.id",
+            "https://www.jualoka.my.id",
+            process.env.BETTER_AUTH_URL,
+            process.env.NEXT_PUBLIC_APP_URL,
+        ].filter(Boolean) as string[];
+        if (allowed.includes(origin)) return allowed;
+        // Allow any Cloudflare tunnel URL (http or https)
+        if (/^https?:\/\/.*\.trycloudflare\.com$/.test(origin)) return [...allowed, origin];
+        return allowed;
+    },
 });
 
 import { headers } from "next/headers";

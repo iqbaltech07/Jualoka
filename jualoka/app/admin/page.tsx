@@ -6,7 +6,7 @@ import { RecentOrders } from "@/components/admin/dashboard/RecentOrders"
 import { ProductAnalysis } from "@/components/admin/dashboard/ProductAnalysis"
 import { StoreHealth } from "@/components/admin/dashboard/StoreHealth"
 
-import { cookies } from "next/headers"
+import { headers } from "next/headers"
 
 function getBaseUrl() {
     if (process.env.NEXT_PUBLIC_APP_URL) return process.env.NEXT_PUBLIC_APP_URL
@@ -17,11 +17,12 @@ export default async function AdminDashboard() {
     let dashboardData: any = null
     let storeRecord: any = null
     try {
-        const jar = await cookies()
-        const token = jar.get("better-auth.session_token")?.value
-        if (token) {
+        const reqHeaders = await headers()
+        const cookieHeader = reqHeaders.get("cookie") || ""
+
+        if (cookieHeader) {
             const res = await fetch(`${getBaseUrl()}/api/dashboard`, {
-                headers: { Cookie: `better-auth.session_token=${token}` },
+                headers: { Cookie: cookieHeader },
                 cache: "no-store",
             })
             if (res.ok) {
@@ -29,7 +30,7 @@ export default async function AdminDashboard() {
             }
 
             const storeRes = await fetch(`${getBaseUrl()}/api/stores`, {
-                headers: { Cookie: `better-auth.session_token=${token}` },
+                headers: { Cookie: cookieHeader },
                 cache: "no-store",
             })
             if (storeRes.ok) {

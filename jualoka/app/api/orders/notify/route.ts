@@ -8,6 +8,9 @@ import { registerStream } from "@/lib/sseRegistry"
  * Keeps a long-lived SSE connection open for the authenticated seller.
  * The admin dashboard connects here to receive real-time order notifications.
  */
+
+export const dynamic = "force-dynamic"
+
 export async function GET(req: Request) {
     // Verify the seller is authenticated
     let userId: string
@@ -55,7 +58,7 @@ export async function GET(req: Request) {
     return new Response(stream, {
         headers: {
             "Content-Type": "text/event-stream",
-            "Cache-Control": "no-cache, no-transform",
+            "Cache-Control": "private, no-cache, no-store, no-transform, must-revalidate",
             "Connection": "keep-alive",
             "X-Accel-Buffering": "no", // Disable Nginx buffering
         },

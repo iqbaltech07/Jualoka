@@ -55,7 +55,7 @@ function AdminUserFooter() {
 
     async function handleLogout() {
         await authClient.signOut()
-        router.push("/auth/login")
+        window.location.reload()
     }
 
     const initial = user?.name
@@ -90,22 +90,27 @@ function OrderNotifier() {
     const isOrdersPage = pathname === "/admin/orders"
 
     useEffect(() => {
-        if (isOrdersPage) return
-
         const es = new EventSource("/api/orders/notify", { withCredentials: true })
 
         es.addEventListener("new_order", (e) => {
             try {
                 const raw = JSON.parse(e.data)
                 const itemCount = raw.orderItems?.length ?? 0
-                toast.success("🛍️ Pesanan baru masuk!", {
-                    description: `Dari ${raw.customerName} · ${itemCount} item`,
-                    duration: 10000,
-                    action: {
-                        label: "Lihat Pesanan",
-                        onClick: () => { window.location.href = "/admin/orders" },
-                    },
-                })
+
+                // Jika sedang di halaman orders, kirim data terbaru agar tabel bisa render instan
+                if (isOrdersPage) {
+                    window.dispatchEvent(new CustomEvent("refreshOrders", { detail: raw }))
+                    toast.success("Pesanan baru masuk!", { duration: 3000 })
+                } else {
+                    toast.success("Pesanan baru masuk!", {
+                        description: `Dari ${raw.customerName} · ${itemCount} item`,
+                        duration: 10000,
+                        action: {
+                            label: "Lihat Pesanan",
+                            onClick: () => { window.location.href = "/admin/orders" },
+                        },
+                    })
+                }
             } catch (err) {
                 console.error("SSE parse error", err)
             }

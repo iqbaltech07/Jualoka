@@ -16,7 +16,7 @@ export default function StoreSettingsPage() {
     const [activeTab, setActiveTab] = useState<Tab>("info")
 
     return (
-        <div className="flex flex-col gap-6">
+        <div className="flex flex-col gap-6 ">
             {/* Header */}
             <div>
                 <h1 className="text-2xl font-bold tracking-tight">Pengaturan Toko</h1>

@@ -1,12 +1,11 @@
 import { NextResponse } from "next/server"
 import type { NextRequest } from "next/server"
 
-const AUTH_COOKIE = "better-auth.session_token"
+const AUTH_COOKIE = process.env.AUTH_COOKIE
 
 export function proxy(request: NextRequest) {
     const { pathname } = request.nextUrl
     const token = request.cookies.get(AUTH_COOKIE)?.value
-
     const isLoggedIn = !!token
 
     if (pathname.startsWith("/admin")) {

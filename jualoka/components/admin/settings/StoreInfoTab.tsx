@@ -109,13 +109,13 @@ export function StoreInfoTab() {
     }
 
     return (
-        <div className="flex flex-col gap-6 w-full">
+        <div className="flex flex-col gap-6">
             <Card className="border-0 shadow-sm bg-white">
-                <CardHeader className="px-6 pt-6 pb-5 border-b border-border/50">
+                <CardHeader className="px-4 sm:px-6 pt-5 sm:pt-6 pb-4 sm:pb-5 border-b border-border/50">
                     <CardTitle className="text-base">Informasi Umum</CardTitle>
                     <CardDescription>Informasi ini akan tampil di halaman toko publik Anda.</CardDescription>
                 </CardHeader>
-                <CardContent className="px-6 py-6 transition-opacity" style={{ opacity: isLoading ? 0.5 : 1, pointerEvents: isLoading ? "none" : "auto" }}>
+                <CardContent className="px-4 sm:px-6 py-5 sm:py-6 transition-opacity" style={{ opacity: isLoading ? 0.5 : 1, pointerEvents: isLoading ? "none" : "auto" }}>
                     <form className="space-y-6" onSubmit={handleSave}>
                         <div className="space-y-2">
                             <Label htmlFor="storeName" className="flex items-center gap-2">
@@ -130,13 +130,15 @@ export function StoreInfoTab() {
                                 <Link2 className="h-3.5 w-3.5 text-muted-foreground" />
                                 URL Toko
                             </Label>
-                            <div className={`flex items-center rounded-xl border border-input overflow-hidden focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2 ${!isEditing ? "opacity-60" : ""}`}>
-                                <span className="text-muted-foreground text-sm bg-muted px-3 h-11 flex items-center border-r border-input whitespace-nowrap shrink-0">
-                                    {process.env.NEXT_PUBLIC_APP_URL?.replace(/^https?:\/\//, '')}/toko/
+                            <div className={`flex items-center rounded-xl border border-input overflow-hidden focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2 w-full ${!isEditing ? "opacity-60" : ""}`}>
+                                <span className="text-muted-foreground text-sm bg-muted px-2 sm:px-3 h-11 flex items-center border-r border-input max-w-[120px] sm:max-w-none overflow-hidden shrink-0">
+                                    <span className="truncate">
+                                        {process.env.NEXT_PUBLIC_APP_URL?.replace(/^https?:\/\//, '')}/toko/
+                                    </span>
                                 </span>
                                 <input
                                     id="slug"
-                                    className="flex-1 h-11 px-3 text-sm outline-none bg-background disabled:cursor-not-allowed"
+                                    className="flex-1 min-w-0 w-full h-11 px-3 text-sm outline-none bg-background disabled:cursor-not-allowed"
                                     placeholder="nama-toko"
                                     value={slug}
                                     onChange={(e) => setSlug(e.target.value)}
@@ -162,9 +164,9 @@ export function StoreInfoTab() {
                                 <Phone className="h-3.5 w-3.5 text-muted-foreground" />
                                 Nomor WhatsApp
                             </Label>
-                            <div className={`flex items-center rounded-xl border border-input overflow-hidden focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2 ${!isEditing ? "opacity-60" : ""}`}>
+                            <div className={`flex items-center rounded-xl border border-input overflow-hidden focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2 w-full ${!isEditing ? "opacity-60" : ""}`}>
                                 <span className="text-muted-foreground text-sm bg-muted px-3 h-11 flex items-center border-r border-input">+62</span>
-                                <input id="whatsapp" type="tel" inputMode="numeric" pattern="[0-9]*" className="flex-1 h-11 px-3 text-sm outline-none bg-background disabled:cursor-not-allowed" placeholder="81234567890" value={whatsapp} onChange={e => setWhatsapp(e.target.value.replace(/[^0-9]/g, ""))} disabled={!isEditing} />
+                                <input id="whatsapp" type="tel" inputMode="numeric" pattern="[0-9]*" className="flex-1 min-w-0 w-full h-11 px-3 text-sm outline-none bg-background disabled:cursor-not-allowed" placeholder="81234567890" value={whatsapp} onChange={e => setWhatsapp(e.target.value.replace(/[^0-9]/g, ""))} disabled={!isEditing} />
                             </div>
                             <p className="text-xs text-muted-foreground">Digunakan untuk menerima pesanan langsung.</p>
                         </div>
@@ -188,12 +190,12 @@ export function StoreInfoTab() {
                             </select>
                         </div>
 
-                        <div className="flex justify-end gap-2 pt-2">
-                            <Button type="button" onClick={() => setIsEditing(true)} disabled={isEditing} className="rounded-xl px-6 gap-2 bg-secondary hover:bg-secondary/90 text-secondary-foreground disabled:opacity-40">
+                        <div className="flex flex-col-reverse sm:flex-row justify-end gap-2 pt-2">
+                            <Button type="button" onClick={() => setIsEditing(true)} disabled={isEditing} className="rounded-xl px-6 gap-2 bg-secondary hover:bg-secondary/90 text-secondary-foreground disabled:opacity-40 w-full sm:w-auto">
                                 <Pencil className="h-3.5 w-3.5" />
                                 Edit
                             </Button>
-                            <Button type="submit" disabled={!isEditing || !storeName.trim() || !slug.trim() || !whatsapp.trim() || !category} className="rounded-xl px-6 bg-primary hover:bg-primary/90 disabled:opacity-40">
+                            <Button type="submit" disabled={!isEditing || !storeName.trim() || !slug.trim() || !whatsapp.trim() || !category} className="rounded-xl px-6 bg-primary hover:bg-primary/90 disabled:opacity-40 w-full sm:w-auto">
                                 Simpan Perubahan
                             </Button>
                         </div>
@@ -202,10 +204,10 @@ export function StoreInfoTab() {
             </Card>
 
             <Card className="border border-red-200 bg-red-50/30">
-                <CardHeader className="px-6 pt-5 pb-4">
+                <CardHeader className="px-4 sm:px-6 pt-4 sm:pt-5 pb-4">
                     <CardTitle className="text-sm font-semibold text-red-700">Zona Berbahaya</CardTitle>
                 </CardHeader>
-                <CardContent className="px-6 pb-5 flex items-center justify-between gap-4">
+                <CardContent className="px-4 sm:px-6 pb-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                     <div>
                         <p className="text-sm font-medium">Hapus Toko</p>
                         <p className="text-xs text-muted-foreground">Tindakan ini tidak dapat dibatalkan.</p>
@@ -213,7 +215,7 @@ export function StoreInfoTab() {
                     <Button
                         variant="destructive"
                         size="sm"
-                        className="rounded-xl shrink-0"
+                        className="rounded-xl shrink-0 w-full sm:w-auto"
                         onClick={handleStoreDelete}
                         disabled={isDeleting}
                     >

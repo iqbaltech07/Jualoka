@@ -4,6 +4,8 @@ import { verifyAuth } from "@/lib/auth"
 import { notifyNewOrder } from "@/lib/sseRegistry"
 import { sendOrderEmail } from "@/lib/mailer"
 
+export const dynamic = "force-dynamic"
+
 export async function GET(req: Request) {
     try {
         const userId = await verifyAuth(req)
@@ -21,7 +23,12 @@ export async function GET(req: Request) {
             orderBy: { createdAt: "desc" }
         })
 
-        return NextResponse.json({ orders }, { status: 200 })
+        return NextResponse.json({ orders }, { 
+            status: 200,
+            headers: {
+                "Cache-Control": "private, no-cache, no-store, must-revalidate"
+            }
+        })
     } catch (error: any) {
         if (error.message === "Missing or invalid token" || error.name === "JsonWebTokenError") {
             return NextResponse.json({ message: "Unauthorized" }, { status: 401 })
