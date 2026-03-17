@@ -4,7 +4,7 @@ import { useState, useEffect } from "react"
 import Link from "next/link"
 import Image from "next/image"
 import { usePathname, useRouter } from "next/navigation"
-import { Package, LayoutDashboard, ShoppingCart, Settings, ChevronRight, LogOut, BarChart, Menu, X } from "lucide-react"
+import { Package, LayoutDashboard, ShoppingCart, Settings, ChevronRight, LogOut, BarChart, Menu, X, Ticket } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { authClient } from "@/lib/auth-client"
 import { Toaster } from "sonner"
@@ -15,6 +15,7 @@ const navLinks = [
     { href: "/admin/analysis", label: "Analisis", icon: BarChart },
     { href: "/admin/products", label: "Products", icon: Package },
     { href: "/admin/orders", label: "Orders", icon: ShoppingCart },
+    { href: "/admin/vouchers", label: "Vouchers", icon: Ticket },
     { href: "/admin/settings", label: "Store Settings", icon: Settings },
 ]
 

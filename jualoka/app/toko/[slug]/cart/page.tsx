@@ -1,9 +1,11 @@
 "use client"
 
-import { useState, useEffect, use, useRef } from "react"
+import { useState, useEffect, use, useRef, useCallback } from "react"
 import { getCart, updateCartQuantity, removeFromCart, clearCart, CartItem } from "@/lib/cartApi"
+import { findBestVoucher, findVoucherByCode, redeemVoucher, Voucher } from "@/lib/voucherStore"
+import { VoucherModal } from "@/components/toko/VoucherModal"
 import Link from "next/link"
-import { ArrowLeft, Minus, Plus, Trash2, ShoppingBag, MessageCircle, AlertCircle } from "lucide-react"
+import { ArrowLeft, Minus, Plus, Trash2, ShoppingBag, MessageCircle, AlertCircle, Ticket, X, Check, Loader2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -23,7 +25,15 @@ export default function CartPage({
     const [items, setItems] = useState<CartItem[]>([])
     const [form, setForm] = useState({ name: "", whatsapp: "" })
     const [storeId, setStoreId] = useState<string | null>(null)
+    const [pendingVoucher, setPendingVoucher] = useState<Voucher | null>(null)
+    const [showVoucherModal, setShowVoucherModal] = useState(false)
     const debounceTimeouts = useRef<Record<string, NodeJS.Timeout>>({})
+
+    // Voucher redeem states
+    const [voucherCode, setVoucherCode] = useState("")
+    const [appliedVoucher, setAppliedVoucher] = useState<Voucher | null>(null)
+    const [voucherError, setVoucherError] = useState("")
+    const [voucherApplying, setVoucherApplying] = useState(false)
 
     useEffect(() => {
         async function loadCart() {
@@ -68,27 +78,32 @@ export default function CartPage({
     }
 
     const total = items.reduce((acc, it) => acc + it.price * it.quantity, 0)
+    const discountAmount = appliedVoucher ? appliedVoucher.discount : 0
+    const finalTotal = Math.max(0, total - discountAmount)
 
-    const handleCheckout = async (e: React.FormEvent) => {
-        e.preventDefault()
-        if (!items.length || !storeId) return
-
-        // Validasi WhatsApp
-        const wa = form.whatsapp
-        if (!wa) {
-            setWaError("Nomor WhatsApp wajib diisi.")
-            return
-        } else if (!/^(08|8)/.test(wa)) {
-            setWaError("Nomor harus diawali dengan 08 atau 8.")
-            return
-        } else if (wa.length < 12) {
-            setWaError("Nomor WhatsApp minimal 12 digit.")
-            return
-        } else if (wa.length > 14) {
-            setWaError("Nomor WhatsApp maksimal 14 digit.")
-            return
+    // Handle voucher apply
+    const handleApplyVoucher = () => {
+        setVoucherApplying(true)
+        setVoucherError("")
+        const { voucher, error } = findVoucherByCode(voucherCode, total)
+        if (voucher) {
+            setAppliedVoucher(voucher)
+            setVoucherError("")
+        } else {
+            setVoucherError(error)
+            setAppliedVoucher(null)
         }
+        setVoucherApplying(false)
+    }
 
+    const handleRemoveVoucher = () => {
+        setAppliedVoucher(null)
+        setVoucherCode("")
+        setVoucherError("")
+    }
+
+    // Core checkout logic — shared between direct checkout and voucher pay
+    const executeCheckout = useCallback(async (appliedVoucher?: Voucher | null) => {
         setIsLoading(true)
         setCheckoutError("")
 
@@ -120,15 +135,27 @@ export default function CartPage({
                 return
             }
 
-            const total = items.reduce((acc, it) => acc + it.price * it.quantity, 0)
+            const cartTotal = items.reduce((acc, it) => acc + it.price * it.quantity, 0)
             let msg = `Halo! Saya *${form.name}* ingin memesan:\n\n`
             items.forEach((it) => {
                 msg += `• ${it.name} ×${it.quantity} = Rp ${(it.price * it.quantity).toLocaleString("id-ID")}\n`
             })
-            msg += `\n*Total: Rp ${total.toLocaleString("id-ID")}*\n\nMohon info selanjutnya. Terima kasih 🙏`
+
+            if (appliedVoucher) {
+                const finalTotal = Math.max(0, cartTotal - appliedVoucher.discount)
+                msg += `\n🎟️ *Voucher: ${appliedVoucher.code}*\n`
+                msg += `Diskon: -Rp ${appliedVoucher.discount.toLocaleString("id-ID")}\n`
+                msg += `\n*Total: Rp ${finalTotal.toLocaleString("id-ID")}*\n\nMohon info selanjutnya. Terima kasih 🙏`
+                // Redeem the voucher
+                redeemVoucher(appliedVoucher.id)
+            } else {
+                msg += `\n*Total: Rp ${cartTotal.toLocaleString("id-ID")}*\n\nMohon info selanjutnya. Terima kasih 🙏`
+            }
 
             await clearCart(store.id)
             setItems([])
+            setShowVoucherModal(false)
+            setPendingVoucher(null)
 
             const waUrl = `https://wa.me/${store.whatsappNumber}?text=${encodeURIComponent(msg)}`
             router.push(`/toko/${slug}/cart/success?slug=${slug}&store=${encodeURIComponent(store.name)}&wa=${encodeURIComponent(waUrl)}`)
@@ -139,6 +166,44 @@ export default function CartPage({
         } finally {
             setIsLoading(false)
         }
+    }, [slug, form, items, router])
+
+    const handleCheckout = async (e: React.FormEvent) => {
+        e.preventDefault()
+        if (!items.length || !storeId) return
+
+        // Validasi WhatsApp
+        const wa = form.whatsapp
+        if (!wa) {
+            setWaError("Nomor WhatsApp wajib diisi.")
+            return
+        } else if (!/^(08|8)/.test(wa)) {
+            setWaError("Nomor harus diawali dengan 08 atau 8.")
+            return
+        } else if (wa.length < 12) {
+            setWaError("Nomor WhatsApp minimal 12 digit.")
+            return
+        } else if (wa.length > 14) {
+            setWaError("Nomor WhatsApp maksimal 14 digit.")
+            return
+        }
+
+        // If user manually applied a voucher, use it directly
+        if (appliedVoucher) {
+            await executeCheckout(appliedVoucher)
+            return
+        }
+
+        // Check for eligible voucher (auto-find)
+        const bestVoucher = findBestVoucher(total)
+        if (bestVoucher) {
+            setPendingVoucher(bestVoucher)
+            setShowVoucherModal(true)
+            return
+        }
+
+        // No voucher — proceed directly
+        await executeCheckout(null)
     }
 
     if (!mounted) return (
@@ -263,10 +328,24 @@ export default function CartPage({
                                         <span className="font-medium flex-shrink-0">Rp {(it.price * it.quantity).toLocaleString("id-ID")}</span>
                                     </div>
                                 ))}
+                                {appliedVoucher && (
+                                    <div className="flex justify-between text-sm">
+                                        <span className="text-emerald-600 flex items-center gap-1.5">
+                                            <Ticket className="h-3.5 w-3.5" />
+                                            Diskon ({appliedVoucher.code})
+                                        </span>
+                                        <span className="font-medium text-emerald-600">-Rp {appliedVoucher.discount.toLocaleString("id-ID")}</span>
+                                    </div>
+                                )}
                                 <div className="border-t border-border/50 pt-3 mt-1">
                                     <div className="flex justify-between items-center">
                                         <span className="font-semibold">Total</span>
-                                        <span className="text-xl font-bold text-primary">Rp {total.toLocaleString("id-ID")}</span>
+                                        <div className="text-right">
+                                            {appliedVoucher && (
+                                                <span className="text-xs text-muted-foreground line-through block">Rp {total.toLocaleString("id-ID")}</span>
+                                            )}
+                                            <span className="text-xl font-bold text-primary">Rp {finalTotal.toLocaleString("id-ID")}</span>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -305,6 +384,69 @@ export default function CartPage({
                                         </p>
                                     )}
                                 </div>
+
+                                {/* Voucher Code Input */}
+                                <div className="space-y-1.5 pt-4 border-t border-border/50">
+                                    <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide flex items-center gap-1.5">
+                                        <Ticket className="h-3.5 w-3.5" />
+                                        Kode Voucher
+                                    </h3>
+                                    {appliedVoucher ? (
+                                        <div className="flex items-center gap-2 bg-emerald-50 border border-emerald-200 rounded-xl px-4 py-3">
+                                            <Check className="h-4 w-4 text-emerald-600 shrink-0" />
+                                            <div className="flex-1 min-w-0">
+                                                <p className="text-sm font-bold text-emerald-700">{appliedVoucher.code}</p>
+                                                <p className="text-xs text-emerald-600">Diskon Rp {appliedVoucher.discount.toLocaleString("id-ID")} berhasil diterapkan</p>
+                                            </div>
+                                            <button
+                                                type="button"
+                                                onClick={handleRemoveVoucher}
+                                                className="h-7 w-7 flex items-center justify-center rounded-lg hover:bg-emerald-100 transition-colors"
+                                                title="Hapus Voucher"
+                                            >
+                                                <X className="h-3.5 w-3.5 text-emerald-700" />
+                                            </button>
+                                        </div>
+                                    ) : (
+                                        <>
+                                            <div className="flex gap-2">
+                                                <Input
+                                                    placeholder="Masukkan kode voucher"
+                                                    className={`h-10 rounded-xl text-sm uppercase tracking-wider font-medium flex-1 ${voucherError ? "border-destructive focus:ring-destructive/20" : ""}`}
+                                                    value={voucherCode}
+                                                    onChange={(e) => {
+                                                        setVoucherCode(e.target.value.toUpperCase())
+                                                        setVoucherError("")
+                                                    }}
+                                                    onKeyDown={(e) => {
+                                                        if (e.key === "Enter") {
+                                                            e.preventDefault()
+                                                            handleApplyVoucher()
+                                                        }
+                                                    }}
+                                                />
+                                                <Button
+                                                    type="button"
+                                                    variant="outline"
+                                                    onClick={handleApplyVoucher}
+                                                    disabled={!voucherCode.trim() || voucherApplying}
+                                                    className="h-10 rounded-xl px-4 text-sm font-semibold shrink-0"
+                                                >
+                                                    {voucherApplying ? (
+                                                        <Loader2 className="h-4 w-4 animate-spin" />
+                                                    ) : (
+                                                        "Gunakan"
+                                                    )}
+                                                </Button>
+                                            </div>
+                                            {voucherError && (
+                                                <p className="text-xs text-destructive flex items-center gap-1">
+                                                    <AlertCircle className="h-3 w-3" /> {voucherError}
+                                                </p>
+                                            )}
+                                        </>
+                                    )}
+                                </div>
                             </form>
                             <div className="px-6 pb-6">
                                 {checkoutError && (
@@ -324,6 +466,18 @@ export default function CartPage({
                         </div>
                     </div>
                 </div>
+            )}
+
+            {/* Voucher Modal */}
+            {showVoucherModal && pendingVoucher && (
+                <VoucherModal
+                    voucher={pendingVoucher}
+                    onPay={() => executeCheckout(pendingVoucher)}
+                    onClose={() => {
+                        setShowVoucherModal(false)
+                        setPendingVoucher(null)
+                    }}
+                />
             )}
         </div>
     )
