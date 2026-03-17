@@ -8,16 +8,27 @@ export const dynamic = "force-dynamic"
 function StoreBanner({ config }: { config: any }) {
     if (!config.enabled) return null
 
-    const gradient =
-        config.theme === "custom"
-            ? config.customGradient
-            : THEME_GRADIENTS[config.theme as keyof typeof THEME_GRADIENTS] || THEME_GRADIENTS.green
+    let customStyle = {}
+    let gradientClass = ""
+
+    if (config.theme === "custom" && config.customGradient) {
+        const startMatch = config.customGradient.match(/from-\[([^\]]+)\]/)
+        const endMatch = config.customGradient.match(/to-\[([^\]]+)\]/)
+        if (startMatch && endMatch) {
+            customStyle = { backgroundImage: `linear-gradient(to bottom right, ${startMatch[1]}, ${endMatch[1]})` }
+        } else {
+            gradientClass = `bg-gradient-to-br ${config.customGradient}`
+        }
+    } else {
+        gradientClass = `bg-gradient-to-br ${THEME_GRADIENTS[config.theme as keyof typeof THEME_GRADIENTS] || THEME_GRADIENTS.green}`
+    }
 
     const titleLines = (config.title || "").split("\n")
 
     return (
         <div
-            className={`relative rounded-3xl overflow-hidden bg-gradient-to-br ${gradient} p-8 sm:p-12 text-white shadow-xl ${config.layout === "center" ? "text-center" : "text-left"}`}
+            className={`relative rounded-3xl overflow-hidden ${gradientClass} p-8 sm:p-12 text-white shadow-xl ${config.layout === "center" ? "text-center" : "text-left"}`}
+            style={customStyle}
         >
             {config.imageUrl && (
                 <div

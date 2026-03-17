@@ -55,7 +55,7 @@ export default function AdminOrdersPage() {
         setIsLoading(true)
         try {
             // Bypass browser cache completely
-            const res = await fetch(`/api/orders?_t=${Date.now()}`, { 
+            const res = await fetch(`/api/orders?_t=${Date.now()}`, {
                 credentials: "include",
                 cache: "no-store",
                 headers: {

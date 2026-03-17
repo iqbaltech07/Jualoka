@@ -111,20 +111,22 @@ export async function GET(req: Request) {
             .filter(p => p.sold > 0)
             .slice(0, 5)
 
-        // Needs attention: only products with concerning status badges
         const worstProducts = productsWithStatus
             .filter(p => NEEDS_ATTENTION_STATUSES.includes(p.status as (typeof NEEDS_ATTENTION_STATUSES)[number]))
             .sort((a, b) => a.sold - b.sold)
 
         const customerOrders = new Map<string, number>()
         currentOrders.forEach(order => {
-            const key = order.customerWhatsapp || order.customerName || "Anonymous"
+            const key =
+                order.customerWhatsapp?.trim() ||
+                order.customerName?.toLowerCase().trim() ||
+                "Anonymous"
             if (key !== "Anonymous") {
                 customerOrders.set(key, (customerOrders.get(key) || 0) + 1)
             }
         })
 
-        const totalCustomers = customerOrders.size || totalOrders // Fallback to total orders if no names
+        const totalCustomers = customerOrders.size || totalOrders
         let repeatCustomers = 0
         customerOrders.forEach(count => {
             if (count > 1) repeatCustomers++

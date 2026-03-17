@@ -4,17 +4,27 @@ import {
     THEME_GRADIENTS,
 } from "@/lib/bannerStore"
 
-export function getBannerGradient(config: BannerConfig): string {
-    if (config.theme === "custom") return config.customGradient
-    return THEME_GRADIENTS[config.theme]
-}
-
 export function BannerPreview({ config }: { config: BannerConfig }) {
-    const gradientClass = getBannerGradient(config)
-    const titleLines = config.title.split("\n")
+    let customStyle = {}
+    let gradientClass = ""
+
+    if (config.theme === "custom" && config.customGradient) {
+        const startMatch = config.customGradient.match(/from-\[([^\]]+)\]/)
+        const endMatch = config.customGradient.match(/to-\[([^\]]+)\]/)
+        if (startMatch && endMatch) {
+            customStyle = { backgroundImage: `linear-gradient(to bottom right, ${startMatch[1]}, ${endMatch[1]})` }
+        } else {
+            gradientClass = `bg-gradient-to-br ${config.customGradient}`
+        }
+    } else {
+        gradientClass = `bg-gradient-to-br ${THEME_GRADIENTS[config.theme] || THEME_GRADIENTS.blue}`
+    }
+
+    const titleLines = (config.title || "").split("\n")
     return (
         <div
-            className={`relative rounded-2xl overflow-hidden bg-gradient-to-br ${gradientClass} p-6 sm:p-8 text-white shadow-lg min-h-[140px] flex items-center ${config.layout === "center" ? "justify-center text-center" : "justify-start text-left"}`}
+            className={`relative rounded-2xl overflow-hidden ${gradientClass} p-6 sm:p-8 text-white shadow-lg min-h-[140px] flex items-center ${config.layout === "center" ? "justify-center text-center" : "justify-start text-left"}`}
+            style={customStyle}
         >
             {config.imageUrl && (
                 <div

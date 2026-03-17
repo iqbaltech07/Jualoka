@@ -29,7 +29,7 @@ export function SalesChart({ data }: {
                         <p className="text-xs text-muted-foreground mt-0.5">Total pendapatan per hari</p>
                     </div>
                     <div className="text-xs font-bold text-primary bg-primary/10 px-2.5 py-1 rounded-full">
-                        Rp {(total / 1000000).toFixed(2)} jt
+                        Rp {(total / 1000000).toFixed(1)} jt
                     </div>
                 </CardHeader>
                 <CardContent className="px-6 pb-5">
