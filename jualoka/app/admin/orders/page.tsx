@@ -37,6 +37,8 @@ export type Order = {
     phone: string
     items: OrderItem[]
     total: number
+    discountAmount: number
+    voucherCode?: string | null
     status: OrderStatus
     date: string
 }
@@ -75,7 +77,9 @@ export default function AdminOrdersPage() {
                 phone: o.customerWhatsapp,
                 status: o.status as OrderStatus,
                 date: o.createdAt,
-                total: o.orderItems.reduce((s: number, i: any) => s + i.price * i.quantity, 0),
+                discountAmount: o.discountAmount || 0,
+                voucherCode: o.voucherCode || null,
+                total: o.orderItems.reduce((s: number, i: any) => s + i.price * i.quantity, 0) - (o.discountAmount || 0),
                 items: o.orderItems.map((i: any) => ({
                     id: i.id,
                     name: i.product?.name ?? "Produk",
@@ -109,7 +113,9 @@ export default function AdminOrdersPage() {
                     phone: raw.customerWhatsapp,
                     status: raw.status as OrderStatus,
                     date: raw.createdAt,
-                    total: raw.orderItems.reduce((s: number, i: any) => s + i.price * i.quantity, 0),
+                    discountAmount: raw.discountAmount || 0,
+                    voucherCode: raw.voucherCode || null,
+                    total: raw.orderItems.reduce((s: number, i: any) => s + i.price * i.quantity, 0) - (raw.discountAmount || 0),
                     items: raw.orderItems.map((i: any) => ({
                         id: i.id,
                         name: i.product?.name ?? "Produk",

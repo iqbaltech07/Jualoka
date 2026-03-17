@@ -1,9 +1,11 @@
 "use client"
 
-import { useState, useEffect, use, useRef } from "react"
+import { useState, useEffect, use, useRef, useCallback } from "react"
 import { getCart, updateCartQuantity, removeFromCart, clearCart, CartItem } from "@/lib/cartApi"
+import { Voucher } from "@/lib/voucherStore"
+import { VoucherModal } from "@/components/toko/VoucherModal"
 import Link from "next/link"
-import { ArrowLeft, Minus, Plus, Trash2, ShoppingBag, MessageCircle, AlertCircle } from "lucide-react"
+import { ArrowLeft, Minus, Plus, Trash2, ShoppingBag, MessageCircle, AlertCircle, Ticket, X, Check, Loader2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -19,20 +21,26 @@ export default function CartPage({
     const [mounted, setMounted] = useState(false)
     const [isLoading, setIsLoading] = useState(false)
     const [checkoutError, setCheckoutError] = useState("")
+    const [waError, setWaError] = useState("")
     const [items, setItems] = useState<CartItem[]>([])
     const [form, setForm] = useState({ name: "", whatsapp: "" })
     const [storeId, setStoreId] = useState<string | null>(null)
+    const [pendingVoucher, setPendingVoucher] = useState<Voucher | null>(null)
+    const [showVoucherModal, setShowVoucherModal] = useState(false)
     const debounceTimeouts = useRef<Record<string, NodeJS.Timeout>>({})
+
+    // Voucher redeem states
+    const [voucherCode, setVoucherCode] = useState("")
+    const [appliedVoucher, setAppliedVoucher] = useState<Voucher | null>(null)
+    const [voucherError, setVoucherError] = useState("")
+    const [voucherApplying, setVoucherApplying] = useState(false)
 
     useEffect(() => {
         async function loadCart() {
-            // First fetch store info to get storeId
             const storeRes = await fetch(`/api/stores/${slug}`)
             if (storeRes.ok) {
                 const { store } = await storeRes.json()
                 setStoreId(store.id)
-
-                // Fetch cart using storeId
                 const cartData = await getCart(store.id)
                 setItems(cartData)
             }
@@ -55,12 +63,8 @@ export default function CartPage({
         if (!storeId) return
         const item = items.find(it => it.id === id)
         if (!item) return
-
         const newQty = item.quantity + delta
-
-        // Prevent exceeding stock limit
         if (newQty > item.stock) return
-
         if (newQty <= 0) {
             await removeFromCart(storeId, id)
         } else {
@@ -74,16 +78,58 @@ export default function CartPage({
     }
 
     const total = items.reduce((acc, it) => acc + it.price * it.quantity, 0)
+    const discountAmount = appliedVoucher ? appliedVoucher.discount : 0
+    const finalTotal = Math.max(0, total - discountAmount)
 
-    const handleCheckout = async (e: React.FormEvent) => {
-        e.preventDefault()
-        if (!items.length || !storeId) return
+    // Handle voucher apply
+    const handleApplyVoucher = async () => {
+        if (!storeId || !voucherCode.trim()) {
+            setVoucherError("Masukkan kode voucher")
+            return
+        }
+        setVoucherApplying(true)
+        setVoucherError("")
+
+        try {
+            const res = await fetch("/api/vouchers/validate", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    storeId,
+                    code: voucherCode,
+                    totalTransaction: total,
+                    customerName: form.name,
+                    customerWhatsapp: form.whatsapp
+                })
+            })
+            const data = await res.json()
+            if (res.ok) {
+                setAppliedVoucher(data.voucher)
+                setVoucherError("")
+            } else {
+                setVoucherError(data.message || "Voucher tidak valid")
+                setAppliedVoucher(null)
+            }
+        } catch (error) {
+            setVoucherError("Terjadi kesalahan saat memvalidasi voucher")
+            setAppliedVoucher(null)
+        } finally {
+            setVoucherApplying(false)
+        }
+    }
+
+    const handleRemoveVoucher = () => {
+        setAppliedVoucher(null)
+        setVoucherCode("")
+        setVoucherError("")
+    }
+
+    // Core checkout logic — shared between direct checkout and voucher pay
+    const executeCheckout = useCallback(async (appliedVoucher?: Voucher | null) => {
         setIsLoading(true)
         setCheckoutError("")
 
         try {
-            // Get WhatsApp number from the already-loaded store data
-            // (fetch store only once, reuse storeId/whatsappNumber from state)
             const storeRes = await fetch(`/api/stores/${slug}`)
             if (!storeRes.ok) throw new Error("Gagal memuat informasi toko.")
             const { store } = await storeRes.json()
@@ -95,7 +141,8 @@ export default function CartPage({
                 items: items.map(it => ({
                     productId: it.id,
                     quantity: it.quantity
-                }))
+                })),
+                voucherId: appliedVoucher ? appliedVoucher.id : undefined
             }
 
             const orderRes = await fetch("/api/orders", {
@@ -104,28 +151,42 @@ export default function CartPage({
                 body: JSON.stringify(orderPayload)
             })
 
+            const resData = await orderRes.json()
+
             if (!orderRes.ok) {
-                const errData = await orderRes.json()
-                setCheckoutError(errData.message || "Gagal membuat pesanan.")
+                setCheckoutError(resData.message || "Gagal membuat pesanan.")
                 setIsLoading(false)
                 return
             }
 
-            // buat pesan whatsapp
-            const total = items.reduce((acc, it) => acc + it.price * it.quantity, 0)
+            const cartTotal = items.reduce((acc, it) => acc + it.price * it.quantity, 0)
             let msg = `Halo! Saya *${form.name}* ingin memesan:\n\n`
             items.forEach((it) => {
                 msg += `• ${it.name} ×${it.quantity} = Rp ${(it.price * it.quantity).toLocaleString("id-ID")}\n`
             })
-            msg += `\n*Total: Rp ${total.toLocaleString("id-ID")}*\n\nMohon info selanjutnya. Terima kasih 🙏`
 
-            // hapus cart secara lokal
+            if (appliedVoucher) {
+                const finalTotal = Math.max(0, cartTotal - appliedVoucher.discount)
+                msg += `\n🎟️ *Voucher: ${appliedVoucher.code}*\n`
+                msg += `Diskon: -Rp ${appliedVoucher.discount.toLocaleString("id-ID")}\n`
+                msg += `\n*Total: Rp ${finalTotal.toLocaleString("id-ID")}*\n\nMohon info selanjutnya. Terima kasih 🙏`
+            } else {
+                msg += `\n*Total: Rp ${cartTotal.toLocaleString("id-ID")}*\n\nMohon info selanjutnya. Terima kasih 🙏`
+            }
+
             await clearCart(store.id)
             setItems([])
+            setShowVoucherModal(false)
+            setPendingVoucher(null)
 
-            // redirect ke halaman success
             const waUrl = `https://wa.me/${store.whatsappNumber}?text=${encodeURIComponent(msg)}`
-            router.push(`/toko/${slug}/cart/success?slug=${slug}&store=${encodeURIComponent(store.name)}&wa=${encodeURIComponent(waUrl)}`)
+            let successUrl = `/toko/${slug}/cart/success?slug=${slug}&store=${encodeURIComponent(store.name)}&wa=${encodeURIComponent(waUrl)}`
+
+            if (resData.newVoucher) {
+                successUrl += `&newVoucherCode=${resData.newVoucher.code}&newVoucherDiscount=${resData.newVoucher.discount}`
+            }
+
+            router.push(successUrl)
 
         } catch (error) {
             console.error("Checkout Error:", error)
@@ -133,6 +194,59 @@ export default function CartPage({
         } finally {
             setIsLoading(false)
         }
+    }, [slug, form, items, router])
+
+    const handleCheckout = async (e: React.FormEvent) => {
+        e.preventDefault()
+        if (!items.length || !storeId) return
+
+        // Validasi WhatsApp
+        const wa = form.whatsapp
+        if (!wa) {
+            setWaError("Nomor WhatsApp wajib diisi.")
+            return
+        } else if (!/^(08|8)/.test(wa)) {
+            setWaError("Nomor harus diawali dengan 08 atau 8.")
+            return
+        } else if (wa.length < 12) {
+            setWaError("Nomor WhatsApp minimal 12 digit.")
+            return
+        } else if (wa.length > 14) {
+            setWaError("Nomor WhatsApp maksimal 14 digit.")
+            return
+        }
+
+        // If user manually applied a voucher, use it directly
+        if (appliedVoucher) {
+            await executeCheckout(appliedVoucher)
+            return
+        }
+
+        // Check for eligible voucher (auto-find)
+        setIsLoading(true)
+        try {
+            const searchParams = new URLSearchParams({
+                storeId,
+                wa: form.whatsapp,
+                name: form.name,
+                total: total.toString()
+            })
+            const res = await fetch(`/api/vouchers/eligible?${searchParams.toString()}`)
+            if (res.ok) {
+                const data = await res.json()
+                if (data.voucher) {
+                    setPendingVoucher(data.voucher)
+                    setShowVoucherModal(true)
+                    setIsLoading(false)
+                    return
+                }
+            }
+        } catch (error) {
+            console.error("Auto voucher error:", error)
+        }
+
+        // No voucher — proceed directly
+        await executeCheckout(null)
     }
 
     if (!mounted) return (
@@ -183,7 +297,6 @@ export default function CartPage({
                     <div className="lg:col-span-3 space-y-3">
                         {items.map((item) => (
                             <div key={item.id} className="bg-white rounded-2xl p-4 border border-border/50 shadow-sm hover:shadow-md transition-all flex flex-col gap-4">
-                                {/* Top Section: Product Info */}
                                 <div className="flex items-center gap-4">
                                     {item.image ? (
                                         <img
@@ -207,11 +320,10 @@ export default function CartPage({
                                     </div>
                                 </div>
 
-                                {/* Bottom Section: Controls & Total */}
                                 <div className="flex items-center justify-between pt-3.5 border-t border-dashed border-border/60">
                                     <div className="flex items-center gap-2 bg-muted/40 p-1 rounded-xl">
-                                        <button 
-                                            onClick={() => update(item.id, -1)} 
+                                        <button
+                                            onClick={() => update(item.id, -1)}
                                             className="h-8 w-8 rounded-lg border border-border bg-white flex items-center justify-center hover:border-primary hover:text-primary transition-all active:scale-95 shadow-sm"
                                         >
                                             <Minus className="h-3 w-3" />
@@ -233,8 +345,8 @@ export default function CartPage({
                                                 Rp {(item.price * item.quantity).toLocaleString("id-ID")}
                                             </span>
                                         </div>
-                                        <button 
-                                            onClick={() => remove(item.id)} 
+                                        <button
+                                            onClick={() => remove(item.id)}
                                             className="h-9 w-9 flex items-center justify-center rounded-xl bg-red-50 text-red-500 hover:bg-red-500 hover:text-white transition-all transform active:scale-90 shadow-sm border border-red-100"
                                             title="Hapus Produk"
                                         >
@@ -259,10 +371,24 @@ export default function CartPage({
                                         <span className="font-medium flex-shrink-0">Rp {(it.price * it.quantity).toLocaleString("id-ID")}</span>
                                     </div>
                                 ))}
+                                {appliedVoucher && (
+                                    <div className="flex justify-between text-sm">
+                                        <span className="text-emerald-600 flex items-center gap-1.5">
+                                            <Ticket className="h-3.5 w-3.5" />
+                                            Diskon ({appliedVoucher.code})
+                                        </span>
+                                        <span className="font-medium text-emerald-600">-Rp {appliedVoucher.discount.toLocaleString("id-ID")}</span>
+                                    </div>
+                                )}
                                 <div className="border-t border-border/50 pt-3 mt-1">
                                     <div className="flex justify-between items-center">
                                         <span className="font-semibold">Total</span>
-                                        <span className="text-xl font-bold text-primary">Rp {total.toLocaleString("id-ID")}</span>
+                                        <div className="text-right">
+                                            {appliedVoucher && (
+                                                <span className="text-xs text-muted-foreground line-through block">Rp {total.toLocaleString("id-ID")}</span>
+                                            )}
+                                            <span className="text-xl font-bold text-primary">Rp {finalTotal.toLocaleString("id-ID")}</span>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -270,11 +396,99 @@ export default function CartPage({
                                 <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">Data Pembeli</h3>
                                 <div className="space-y-1.5">
                                     <Label htmlFor="name" className="text-xs">Nama Lengkap *</Label>
-                                    <Input id="name" placeholder="Budi Santoso" className="h-10 rounded-xl text-sm" required value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
+                                    <Input
+                                        id="name"
+                                        placeholder="Budi Santoso"
+                                        className="h-10 rounded-xl text-sm"
+                                        required
+                                        value={form.name}
+                                        onChange={(e) => setForm({ ...form, name: e.target.value })}
+                                    />
                                 </div>
                                 <div className="space-y-1.5">
                                     <Label htmlFor="wa" className="text-xs">Nomor WhatsApp *</Label>
-                                    <Input id="wa" type="tel" placeholder="0812xxxx" className="h-10 rounded-xl text-sm" required value={form.whatsapp} onChange={(e) => setForm({ ...form, whatsapp: e.target.value })} />
+                                    <Input
+                                        id="wa"
+                                        type="tel"
+                                        inputMode="numeric"
+                                        placeholder="08123456789"
+                                        className={`h-10 rounded-xl text-sm ${waError ? "border-destructive focus:ring-destructive/20" : ""}`}
+                                        required
+                                        value={form.whatsapp}
+                                        onChange={(e) => {
+                                            const val = e.target.value.replace(/[^0-9]/g, "")
+                                            setForm({ ...form, whatsapp: val })
+                                            setWaError("")
+                                        }}
+                                    />
+                                    {waError && (
+                                        <p className="text-xs text-destructive flex items-center gap-1">
+                                            <AlertCircle className="h-3 w-3" /> {waError}
+                                        </p>
+                                    )}
+                                </div>
+
+                                {/* Voucher Code Input */}
+                                <div className="space-y-1.5 pt-4 border-t border-border/50">
+                                    <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide flex items-center gap-1.5">
+                                        <Ticket className="h-3.5 w-3.5" />
+                                        Kode Voucher
+                                    </h3>
+                                    {appliedVoucher ? (
+                                        <div className="flex items-center gap-2 bg-emerald-50 border border-emerald-200 rounded-xl px-4 py-3">
+                                            <Check className="h-4 w-4 text-emerald-600 shrink-0" />
+                                            <div className="flex-1 min-w-0">
+                                                <p className="text-sm font-bold text-emerald-700">{appliedVoucher.code}</p>
+                                                <p className="text-xs text-emerald-600">Diskon Rp {appliedVoucher.discount.toLocaleString("id-ID")} berhasil diterapkan</p>
+                                            </div>
+                                            <button
+                                                type="button"
+                                                onClick={handleRemoveVoucher}
+                                                className="h-7 w-7 flex items-center justify-center rounded-lg hover:bg-emerald-100 transition-colors"
+                                                title="Hapus Voucher"
+                                            >
+                                                <X className="h-3.5 w-3.5 text-emerald-700" />
+                                            </button>
+                                        </div>
+                                    ) : (
+                                        <>
+                                            <div className="flex gap-2">
+                                                <Input
+                                                    placeholder="Masukkan kode voucher"
+                                                    className={`h-10 rounded-xl text-sm uppercase tracking-wider font-medium flex-1 ${voucherError ? "border-destructive focus:ring-destructive/20" : ""}`}
+                                                    value={voucherCode}
+                                                    onChange={(e) => {
+                                                        setVoucherCode(e.target.value.toUpperCase())
+                                                        setVoucherError("")
+                                                    }}
+                                                    onKeyDown={(e) => {
+                                                        if (e.key === "Enter") {
+                                                            e.preventDefault()
+                                                            handleApplyVoucher()
+                                                        }
+                                                    }}
+                                                />
+                                                <Button
+                                                    type="button"
+                                                    variant="outline"
+                                                    onClick={handleApplyVoucher}
+                                                    disabled={!voucherCode.trim() || voucherApplying}
+                                                    className="h-10 rounded-xl px-4 text-sm font-semibold shrink-0"
+                                                >
+                                                    {voucherApplying ? (
+                                                        <Loader2 className="h-4 w-4 animate-spin" />
+                                                    ) : (
+                                                        "Gunakan"
+                                                    )}
+                                                </Button>
+                                            </div>
+                                            {voucherError && (
+                                                <p className="text-xs text-destructive flex items-center gap-1">
+                                                    <AlertCircle className="h-3 w-3" /> {voucherError}
+                                                </p>
+                                            )}
+                                        </>
+                                    )}
                                 </div>
                             </form>
                             <div className="px-6 pb-6">
@@ -289,12 +503,24 @@ export default function CartPage({
                                     {isLoading ? "Memproses..." : "Pesan via WhatsApp"}
                                 </button>
                                 <p className="text-xs text-muted-foreground text-center mt-3">
-                                    Anda akan diarahkan ke WhatsApp penjual setelah klik.
+                                    Pastikan data yang anda masukkan sudah benar sebelum klik pesan
                                 </p>
                             </div>
                         </div>
                     </div>
                 </div>
+            )}
+
+            {/* Voucher Modal */}
+            {showVoucherModal && pendingVoucher && (
+                <VoucherModal
+                    voucher={pendingVoucher}
+                    onPay={() => executeCheckout(pendingVoucher)}
+                    onClose={() => {
+                        setShowVoucherModal(false)
+                        setPendingVoucher(null)
+                    }}
+                />
             )}
         </div>
     )

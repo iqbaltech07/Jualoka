@@ -4,6 +4,8 @@ import { THEME_GRADIENTS, BannerConfig } from "@/lib/bannerStore"
 import { ProductGrid } from "@/components/toko/ProductGrid"
 import { notFound } from "next/navigation"
 export const dynamic = "force-dynamic"
+import { BackButton } from "@/components/toko/BackButton"
+import { CheckoutConfirmModal } from "@/components/toko/CheckoutConfirmModal"
 
 function StoreBanner({ config }: { config: any }) {
     if (!config.enabled) return null
@@ -78,39 +80,40 @@ export default async function StorePage({
     try {
         const url = `${getBaseUrl()}/api/stores/${slug}`
         const res = await fetch(url, { cache: "no-store" })
-        
+
         if (!res.ok) {
             notFound()
         }
 
         const data = await res.json()
         const store = data.store
-        
+
         if (!store) notFound()
 
-        // isOpen is now stored in the database — visible across all devices
         const isOpen: boolean = store.isOpen ?? true
         const closedMessage = "Toko sedang tutup sementara. Kami akan segera kembali! 🙏"
 
-        // Map DB config to BannerConfig interface
         const bannerConfig: BannerConfig = {
-             enabled: store.bannerEnabled,
-             badge: store.bannerBadge,
-             title: store.bannerTitle,
-             description: store.bannerDesc,
-             theme: store.bannerTheme,
-             customGradient: store.bannerGradient,
-             layout: store.bannerLayout,
-             imageUrl: store.bannerImageUrl,
-             imageOpacity: store.bannerOpacity
+            enabled: store.bannerEnabled,
+            badge: store.bannerBadge,
+            title: store.bannerTitle,
+            description: store.bannerDesc,
+            theme: store.bannerTheme,
+            customGradient: store.bannerGradient,
+            layout: store.bannerLayout,
+            imageUrl: store.bannerImageUrl,
+            imageOpacity: store.bannerOpacity
         }
 
         return (
             <div className="flex flex-col gap-10">
+                {/* Back button */}
+                <BackButton />
+
                 {/* Hero Banner */}
                 <StoreBanner config={bannerConfig} />
 
-                {/* ── CLOSED OVERLAY ─────────────────────────────────────────── */}
+                {/* CLOSED OVERLAY */}
                 {!isOpen && (
                     <div className="rounded-3xl border-2 border-dashed border-red-300 bg-red-50 px-8 py-12 flex flex-col items-center text-center gap-4">
                         <div className="h-16 w-16 rounded-full bg-red-100 flex items-center justify-center text-3xl">
@@ -134,13 +137,15 @@ export default async function StorePage({
                     </div>
                 </div>
 
-                {/* Product Grid — disable ordering when closed */}
+                {/* Product Grid */}
                 <ProductGrid products={store.products} isOpen={isOpen} storeId={store.id} />
-            
+
+                {/* Checkout Confirm Modal */}
+                <CheckoutConfirmModal slug={slug} storeId={store.id} />
             </div>
         )
-    } catch(err) {
-         console.error(err)
-         return <div className="p-10 text-center">Gagal memuat toko. Coba lagi nanti.</div>
+    } catch (err) {
+        console.error(err)
+        return <div className="p-10 text-center">Gagal memuat toko. Coba lagi nanti.</div>
     }
 }

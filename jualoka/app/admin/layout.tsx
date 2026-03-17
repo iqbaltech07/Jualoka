@@ -1,21 +1,21 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import Link from "next/link"
 import Image from "next/image"
 import { usePathname, useRouter } from "next/navigation"
-import { Package, LayoutDashboard, ShoppingCart, Settings, ChevronRight, LogOut, BarChart, Menu, X } from "lucide-react"
+import { Package, LayoutDashboard, ShoppingCart, Settings, ChevronRight, LogOut, BarChart, Menu, X, Ticket } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { authClient } from "@/lib/auth-client"
 import { Toaster } from "sonner"
 import { toast } from "sonner"
-import { useEffect } from "react"
 
 const navLinks = [
     { href: "/admin", label: "Dashboard", icon: LayoutDashboard },
     { href: "/admin/analysis", label: "Analisis", icon: BarChart },
     { href: "/admin/products", label: "Products", icon: Package },
     { href: "/admin/orders", label: "Orders", icon: ShoppingCart },
+    { href: "/admin/vouchers", label: "Vouchers", icon: Ticket },
     { href: "/admin/settings", label: "Store Settings", icon: Settings },
 ]
 
@@ -52,13 +52,16 @@ function AdminUserFooter() {
     const router = useRouter()
     const { data: session } = authClient.useSession()
     const user = session?.user
+    const [mounted, setMounted] = useState(false)
+
+    useEffect(() => setMounted(true), [])
 
     async function handleLogout() {
         await authClient.signOut()
         window.location.reload()
     }
 
-    const initial = user?.name
+    const initial = mounted && user?.name
         ? user.name.trim()[0].toUpperCase()
         : "A"
 
@@ -69,8 +72,8 @@ function AdminUserFooter() {
                     {initial}
                 </div>
                 <div className="min-w-0 flex-1">
-                    <p className="text-white text-sm font-medium truncate">{user?.name ?? "Admin"}</p>
-                    <p className="text-white/50 text-xs truncate">{user?.email ?? "Pemilik Toko"}</p>
+                    <p className="text-white text-sm font-medium truncate">{mounted ? (user?.name ?? "Admin") : "Admin"}</p>
+                    <p className="text-white/50 text-xs truncate">{mounted ? (user?.email ?? "Pemilik Toko") : "Pemilik Toko"}</p>
                 </div>
                 <button
                     onClick={handleLogout}
@@ -97,7 +100,6 @@ function OrderNotifier() {
                 const raw = JSON.parse(e.data)
                 const itemCount = raw.orderItems?.length ?? 0
 
-                // Jika sedang di halaman orders, kirim data terbaru agar tabel bisa render instan
                 if (isOrdersPage) {
                     window.dispatchEvent(new CustomEvent("refreshOrders", { detail: raw }))
                     toast.success("Pesanan baru masuk!", { duration: 3000 })
@@ -122,6 +124,23 @@ function OrderNotifier() {
     }, [isOrdersPage])
 
     return null
+}
+
+function AdminAvatarHeader() {
+    const { data: session } = authClient.useSession()
+    const [mounted, setMounted] = useState(false)
+
+    useEffect(() => setMounted(true), [])
+
+    const initial = mounted && session?.user?.name
+        ? session.user.name.trim()[0].toUpperCase()
+        : "A"
+
+    return (
+        <div className="hidden md:flex h-8 w-8 rounded-full bg-[#fac023] items-center justify-center text-[#1a1a1a] font-bold text-sm">
+            {initial}
+        </div>
+    )
 }
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
@@ -185,20 +204,18 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                 {/* Main */}
                 <div className="flex-1 md:ml-64 flex flex-col min-h-screen">
                     <header className={cn(
-                        "h-16 border-b border-border/50 bg-white/80 backdrop-blur-sm sticky top-0 z-40 flex items-center px-6 shadow-sm",
+                        "h-16 border-b border-border/50 bg-white/80 backdrop-blur-sm sticky top-0 z-40 flex items-center px-4 shadow-sm",
                         mobileOpen && "md:flex hidden"
                     )}>
                         {/* Logo mobile */}
                         <div className="flex items-center gap-2 md:hidden">
-                            <Image src="/logo.svg" alt="Jualoka" width={32} height={32} className="rounded-xl" />
-                            <span className="font-bold text-primary">Jualoka</span>
+                            <Image src="/logo.svg" alt="Jualoka" width={28} height={28} className="rounded-lg" />
+                            <span className="font-bold text-sm text-primary">Jualoka</span>
                         </div>
 
                         <div className="ml-auto flex items-center gap-3">
                             {/* Avatar desktop */}
-                            <div className="hidden md:flex h-8 w-8 rounded-full bg-[#fac023] items-center justify-center text-[#1a1a1a] font-bold text-sm">
-                                A
-                            </div>
+                            <AdminAvatarHeader />
                             {/* Hamburger mobile */}
                             <button
                                 type="button"

@@ -81,6 +81,7 @@ model Store {
   isOpen         Boolean   @default(true)
   orders         Order[]
   products       Product[]
+  vouchers       Voucher[]
   user           User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
@@ -107,6 +108,8 @@ model Order {
   createdAt        DateTime    @default(now())
   status           String      @default("baru")
   orderNumber      Int
+  discountAmount   Int         @default(0)
+  voucherCode      String?
   store            Store       @relation(fields: [storeId], references: [id], onDelete: Cascade)
   orderItems       OrderItem[]
 }
@@ -119,4 +122,18 @@ model OrderItem {
   price     Int
   order     Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
   product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+}
+
+model Voucher {
+  id             String    @id @default(cuid())
+  storeId        String
+  code           String    @unique
+  discount       Int
+  minTransaction Int       @default(0)
+  stock          Int       @default(1)
+  isActive       Boolean   @default(true)
+  expiresAt      DateTime?
+  store          Store     @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
 }

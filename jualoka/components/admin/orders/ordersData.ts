@@ -29,6 +29,8 @@ export type Order = {
     phone: string
     items: OrderItem[]
     total: number
+    discountAmount: number
+    voucherCode?: string | null
     status: OrderStatus
     date: string // ISO date
     note?: string

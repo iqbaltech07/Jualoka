@@ -59,9 +59,17 @@ export function OrderCard({
                             <CalendarDays className="h-3 w-3" />
                             {formatDate(order.date)}
                         </span>
-                        <span className="text-sm font-bold text-primary ml-auto">
-                            {formatRp(order.total)}
-                        </span>
+                        <div className="flex flex-col items-end ml-auto">
+                            {order.discountAmount > 0 && order.voucherCode && (
+                                <span className="text-[10px] text-primary/80 font-semibold bg-primary/5 px-1.5 py-0.5 rounded flex items-center gap-1 mb-0.5">
+                                    <span className="line-through text-muted-foreground/60 mr-1">{formatRp(order.total + order.discountAmount)}</span>
+                                    Voucher: {order.voucherCode}
+                                </span>
+                            )}
+                            <span className="text-sm font-bold text-primary">
+                                {formatRp(order.total)}
+                            </span>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -100,8 +108,17 @@ export function OrderCard({
                                     </span>
                                 </div>
                             ))}
-                            <div className="flex items-center justify-between px-4 py-2.5 font-bold">
-                                <span className="text-sm">Total</span>
+                            {order.discountAmount > 0 && order.voucherCode && (
+                                <div className="flex items-center justify-between px-4 py-2.5 text-primary bg-primary/5 font-medium border-t border-border/50">
+                                    <span className="text-sm flex flex-col">
+                                        <span>Potongan Voucher</span>
+                                        <span className="text-[10px] uppercase font-bold tracking-wider opacity-80">{order.voucherCode}</span>
+                                    </span>
+                                    <span className="text-sm">- {formatRp(order.discountAmount)}</span>
+                                </div>
+                            )}
+                            <div className="flex items-center justify-between px-4 py-2.5 font-bold border-t border-border/50 bg-muted/20">
+                                <span className="text-sm">Total Bayar</span>
                                 <span className="text-sm text-primary">{formatRp(order.total)}</span>
                             </div>
                         </div>

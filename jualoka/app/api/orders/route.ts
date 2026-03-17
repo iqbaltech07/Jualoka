@@ -23,7 +23,7 @@ export async function GET(req: Request) {
             orderBy: { createdAt: "desc" }
         })
 
-        return NextResponse.json({ orders }, { 
+        return NextResponse.json({ orders }, {
             status: 200,
             headers: {
                 "Cache-Control": "private, no-cache, no-store, must-revalidate"
@@ -41,7 +41,7 @@ export async function GET(req: Request) {
 export async function POST(req: Request) {
     try {
         const body = await req.json()
-        const { storeId, customerName, customerWhatsapp, items } = body
+        const { storeId, customerName, customerWhatsapp, items, voucherId } = body
 
         if (!storeId || !customerName || !customerWhatsapp || !items || items.length === 0) {
             return NextResponse.json({ message: "Required fields are missing" }, { status: 400 })
@@ -79,7 +79,46 @@ export async function POST(req: Request) {
             }
         }
 
-        const newOrder = await prisma.$transaction(async (tx) => {
+        // Validate voucher if provided
+        let validVoucher = null;
+        if (voucherId) {
+            validVoucher = await prisma.voucher.findUnique({ where: { id: voucherId } })
+            if (!validVoucher || validVoucher.storeId !== storeId || !validVoucher.isActive || validVoucher.stock <= 0) {
+                return NextResponse.json({ message: "Voucher tidak valid atau sudah habis" }, { status: 400 })
+            }
+            if (validVoucher.expiresAt && validVoucher.expiresAt < new Date()) {
+                return NextResponse.json({ message: "Voucher sudah kedaluwarsa" }, { status: 400 })
+            }
+
+            // Usage validation: Per user request, minTransaction is only for earning NOT for using.
+            // So we skip the cartTotal check here.
+        }
+
+        // Calculate totals for tracking
+        const orderTotal = items.reduce((acc: number, item: any) => {
+            const product = products.find(p => p.id === item.productId)!
+            return acc + (product.price * item.quantity)
+        }, 0)
+
+        // Apply voucher discount
+        const discountAmount = validVoucher ? Math.min(validVoucher.discount, orderTotal) : 0
+
+        const pastOrders = await prisma.order.findMany({
+            where: {
+                storeId,
+                customerWhatsapp,
+                customerName
+            },
+            include: {
+                orderItems: true
+            }
+        })
+
+        const historicalTotal = pastOrders.reduce((acc, order) => {
+            return acc + order.orderItems.reduce((sum, item) => sum + (item.price * item.quantity), 0)
+        }, 0)
+
+        const { newOrder, generatedVoucher } = await prisma.$transaction(async (tx) => {
             const lastOrder = await tx.order.findFirst({
                 where: { storeId },
                 orderBy: { orderNumber: "desc" },
@@ -88,13 +127,15 @@ export async function POST(req: Request) {
 
             const nextOrderNumber = lastOrder ? lastOrder.orderNumber + 1 : 1
 
-            return await tx.order.create({
+            const createdOrder = await tx.order.create({
                 data: {
                     storeId,
                     customerName,
                     customerWhatsapp,
                     status: "baru",
                     orderNumber: nextOrderNumber,
+                    discountAmount,
+                    voucherCode: validVoucher ? validVoucher.code : null,
                     orderItems: {
                         create: (items as { productId: string; quantity: number }[]).map((item) => {
                             const product = products.find(p => p.id === item.productId)!
@@ -110,20 +151,55 @@ export async function POST(req: Request) {
                     orderItems: { include: { product: true } }
                 }
             })
+
+            if (validVoucher) {
+                await tx.voucher.update({
+                    where: { id: validVoucher.id },
+                    data: { stock: { decrement: 1 } }
+                })
+            }
+
+            const combinedTotal = historicalTotal + orderTotal
+
+            // Find all eligible reward candidates: 
+            // Vouchers where the threshold (minTransaction) was JUST crossed in this order.
+            const eligibleTemplates = await tx.voucher.findMany({
+                where: {
+                    storeId,
+                    minTransaction: {
+                        gt: historicalTotal,
+                        lte: combinedTotal
+                    },
+                    isActive: true,
+                    stock: { gt: 0 }
+                }
+            })
+
+            let genVoucher = null
+
+            if (eligibleTemplates.length > 0) {
+                const randomIndex = Math.floor(Math.random() * eligibleTemplates.length)
+                const rewardTemplate = eligibleTemplates[randomIndex]
+
+                genVoucher = await tx.voucher.update({
+                    where: { id: rewardTemplate.id },
+                    data: {
+                        stock: { decrement: 1 }
+                    }
+                })
+            }
+
+            return { newOrder: createdOrder, generatedVoucher: genVoucher }
         })
 
-        // Decrement stock + fire notifications in parallel for best performance
         await Promise.all([
-            // Decrement stock
-            ...(items as { productId: string; quantity: number }[]).map((item) =>
+            ...(items as { productId: string; quantity: number }[]).map((item: any) =>
                 prisma.product.update({
                     where: { id: item.productId },
                     data: { stock: { decrement: item.quantity } }
                 })
             ),
-            // Real-time SSE notification to connected admin dashboard
             Promise.resolve(notifyNewOrder(storeId, newOrder)),
-            // Email to seller
             sendOrderEmail(
                 store.user!.email,
                 {
@@ -142,7 +218,7 @@ export async function POST(req: Request) {
             ),
         ])
 
-        return NextResponse.json({ message: "Order placed successfully", order: newOrder }, { status: 201 })
+        return NextResponse.json({ message: "Order placed successfully", order: newOrder, newVoucher: generatedVoucher }, { status: 201 })
     } catch (error) {
         console.error("Create Order Error:", error)
         return NextResponse.json({ message: "Internal server error" }, { status: 500 })
