@@ -18,7 +18,13 @@ export function VoucherCard({
     const isActive = voucher.stock > 0 && voucher.discount > 0 && !isExpired
 
     const formatExpiry = (date: Date) =>
-        date.toLocaleDateString("id-ID", { day: "numeric", month: "short", year: "numeric" })
+        date.toLocaleDateString("id-ID", { 
+            day: "numeric", 
+            month: "short", 
+            year: "numeric",
+            hour: "2-digit",
+            minute: "2-digit"
+        })
 
     return (
         <div className={`group relative bg-white rounded-2xl border overflow-hidden shadow-sm hover:shadow-md transition-all duration-200 ${isActive ? "border-primary/20" : "border-border/50 opacity-70"}`}>

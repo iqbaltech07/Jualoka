@@ -23,7 +23,7 @@ export function VoucherEditModal({
     const [stock, setStock] = useState(voucher.stock.toString())
     const [expiresAt, setExpiresAt] = useState<string>(
         voucher.expiresAt
-            ? new Date(voucher.expiresAt).toISOString().split("T")[0]
+            ? new Date(voucher.expiresAt).toISOString().slice(0, 16)
             : ""
     )
 
@@ -132,11 +132,11 @@ export function VoucherEditModal({
                         </Label>
                         <Input
                             id="edit-expires"
-                            type="date"
+                            type="datetime-local"
                             className="h-10 rounded-xl text-sm"
                             value={expiresAt}
                             onChange={(e) => setExpiresAt(e.target.value)}
-                            min={new Date().toISOString().split("T")[0]}
+                            min={new Date().toISOString().slice(0, 16)}
                         />
                         {expiresAt && (
                             <button

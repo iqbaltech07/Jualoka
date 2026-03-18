@@ -16,6 +16,7 @@ export function StoreInfoTab() {
     const router = useRouter()
     const [copied, setCopied] = useState(false)
     const [isEditing, setIsEditing] = useState(true)
+    const [isSaving, setIsSaving] = useState(false)
     const [isDeleting, setIsDeleting] = useState(false)
     const [storeName, setStoreName] = useState("")
     const [slug, setSlug] = useState("")
@@ -48,6 +49,7 @@ export function StoreInfoTab() {
 
     async function handleSave(e: React.FormEvent) {
         e.preventDefault()
+        setIsSaving(true)
         try {
             let formattedPhone = whatsapp
             if (formattedPhone.startsWith("0")) formattedPhone = "62" + formattedPhone.substring(1)
@@ -70,6 +72,8 @@ export function StoreInfoTab() {
         } catch (error) {
             console.error("Save error", error)
             toast.error("Terjadi kesalahan koneksi.")
+        } finally {
+            setIsSaving(false)
         }
     }
 
@@ -192,12 +196,12 @@ export function StoreInfoTab() {
                         </div>
 
                         <div className="flex flex-col-reverse sm:flex-row justify-end gap-2 pt-2">
-                            <Button type="button" onClick={() => setIsEditing(true)} disabled={isEditing} className="rounded-xl px-6 gap-2 bg-white hover:bg-gray-50 text-gray-900 border border-gray-200 disabled:opacity-40 w-full sm:w-auto">pnpm
+                            <Button type="button" onClick={() => setIsEditing(true)} disabled={isEditing} className="rounded-xl px-6 gap-2 bg-white hover:bg-gray-50 text-gray-900 border border-gray-200 disabled:opacity-40 w-full sm:w-auto">
                                 <Pencil className="h-3.5 w-3.5" />
                                 Edit
                             </Button>
-                            <Button type="submit" disabled={!isEditing || !storeName.trim() || !slug.trim() || !whatsapp.trim() || !category} className="rounded-xl px-6 bg-primary hover:bg-primary/90 disabled:opacity-40 w-full sm:w-auto">
-                                Simpan Perubahan
+                            <Button type="submit" disabled={!isEditing || !storeName.trim() || !slug.trim() || !whatsapp.trim() || !category || isSaving} className="rounded-xl px-6 bg-primary hover:bg-primary/90 disabled:opacity-40 w-full sm:w-auto">
+                                {isSaving ? "Menyimpan..." : "Simpan Perubahan"}
                             </Button>
                         </div>
                     </form>
