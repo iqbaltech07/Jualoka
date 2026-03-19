@@ -4,22 +4,17 @@ import { StoreCard, type StoreCardData } from "@/components/toko/StoreCard"
 import { StoreHero } from "@/components/toko/StoreHero"
 import { StoreCtaBanner } from "@/components/toko/StoreCtaBanner"
 import { StoresClientPage } from "@/components/toko/StoresClientPage"
+import { THEME_GRADIENTS, type BannerTheme } from "@/lib/bannerStore"
 
 // Always fresh data
 export const dynamic = "force-dynamic"
 
-// Map bannerTheme → Tailwind gradient
-function themeToColor(theme: string): string {
-    const map: Record<string, string> = {
-        green: "from-emerald-400 to-green-600",
-        blue: "from-blue-400 to-indigo-600",
-        purple: "from-purple-400 to-violet-600",
-        orange: "from-orange-400 to-amber-500",
-        red: "from-rose-400 to-red-600",
-        teal: "from-teal-400 to-cyan-600",
-        gray: "from-slate-400 to-gray-600",
+// Map bannerTheme & bannerGradient → Tailwind gradient
+function getStoreColor(theme: string, customGradient?: string | null): string {
+    if (theme === "custom" && customGradient) {
+        return customGradient
     }
-    return map[theme] || "from-emerald-400 to-green-600"
+    return THEME_GRADIENTS[theme as BannerTheme] || THEME_GRADIENTS.green
 }
 
 export default async function StoresPage() {
@@ -29,6 +24,7 @@ export default async function StoresPage() {
         slug: string
         category: string | null
         bannerTheme: string
+        bannerGradient: string | null
         _count: { products: number }
     }
 
@@ -44,6 +40,7 @@ export default async function StoresPage() {
             slug: true,
             category: true,
             bannerTheme: true,
+            bannerGradient: true,
             _count: { select: { products: true } },
         },
         orderBy: { createdAt: "desc" },
@@ -55,7 +52,7 @@ export default async function StoresPage() {
         slug: s.slug,
         category: s.category || "Umum",
         productCount: s._count.products,
-        color: themeToColor(s.bannerTheme),
+        color: getStoreColor(s.bannerTheme, s.bannerGradient),
     }))
 
     return <StoresClientPage stores={stores} />

@@ -61,6 +61,9 @@ export function VoucherModal({
                         <h2 className="text-lg font-bold text-foreground">Selamat!</h2>
                         <p className="text-sm text-muted-foreground mt-1">
                             Kamu dapat voucher diskon <span className="font-bold text-primary">Rp {voucher.discount.toLocaleString("id-ID")}</span>
+                            {voucher.minTransaction > 0 && (
+                                <span className="block text-[11px] mt-0.5 italic">Minimal belanja Rp {voucher.minTransaction.toLocaleString("id-ID")}</span>
+                            )}
                         </p>
                     </div>
 

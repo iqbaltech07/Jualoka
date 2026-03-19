@@ -52,7 +52,7 @@ export async function POST(req: Request) {
         if (!store) return NextResponse.json({ message: "Store not found" }, { status: 404 })
 
         const body = await req.json()
-        const { code, discount, minTransaction, stock, isActive, expiresAt } = body
+        const { code, discount, minTransaction, stock, isActive, expiresAt, tier, weight, threshold } = body
 
         if (!code || typeof discount !== 'number') {
             return NextResponse.json({ message: "Code and discount are required" }, { status: 400 })
@@ -73,6 +73,9 @@ export async function POST(req: Request) {
                 stock: stock !== undefined ? stock : 1,
                 isActive: isActive !== undefined ? isActive : true,
                 expiresAt: expiresAt ? new Date(expiresAt) : null,
+                tier: tier || null,
+                weight: weight !== undefined ? weight : 1,
+                threshold: threshold !== undefined ? threshold : 0,
             }
         })
 

@@ -171,7 +171,7 @@ export function BannerTab() {
             {/* Action bar */}
             <div className="flex items-center justify-between flex-wrap gap-2">
                 <p className="text-muted-foreground text-sm">Atur tampilan banner di halaman toko Anda.</p>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 flex-wrap">
                     <button
                         type="button"
                         onClick={() => setShowPreview((p) => !p)}
@@ -276,7 +276,7 @@ export function BannerTab() {
                             {config.theme === "custom" && (
                                 <div className="flex flex-col gap-1.5">
                                     <label className="text-xs font-semibold text-foreground/80">Warna Gradasi (Awal & Akhir)</label>
-                                    <div className="flex gap-4">
+                                    <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
                                         <div className="flex-1 space-y-1.5">
                                             <div className="flex bg-[#f8fafb] border border-border rounded-xl overflow-hidden h-[42px] focus-within:ring-2 focus-within:ring-primary/30 focus-within:border-primary transition-all">
                                                 <input

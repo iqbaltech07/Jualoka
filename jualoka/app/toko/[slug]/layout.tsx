@@ -87,7 +87,7 @@ export default async function TokoLayout({
 
             <footer className="border-t border-border/50 bg-white py-6 text-center text-sm text-muted-foreground">
                 <p>
-                    © 2025 <span className="font-semibold text-primary">{storeName}</span> · Powered by{" "}
+                    © 2026 <span className="font-semibold text-primary">{storeName}</span> · Powered by{" "}
                     <span className="font-semibold">Jualoka</span>
                 </p>
             </footer>

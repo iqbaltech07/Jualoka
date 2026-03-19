@@ -58,10 +58,12 @@ export default function VouchersPage() {
         }
     }
 
-    async function handleSave(id: string, data: { code: string; discount: number; minTransaction: number; stock: number; expiresAt?: string | null }) {
+    async function handleSave(id: string, data: { code: string; discount: number; minTransaction: number; threshold: number; stock: number; isActive: boolean; expiresAt?: string | null }) {
         try {
-            const res = await fetch(`/api/vouchers/${id}`, {
-                method: "PUT",
+            const method = id ? "PUT" : "POST"
+            const url = id ? `/api/vouchers/${id}` : "/api/vouchers"
+            const res = await fetch(url, {
+                method,
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(data)
             })
@@ -133,13 +135,23 @@ export default function VouchersPage() {
                     <h1 className="text-2xl font-bold tracking-tight">Vouchers</h1>
                     <p className="text-muted-foreground text-sm mt-1">Kelola kode voucher diskon untuk pelanggan.</p>
                 </div>
-                <Button
-                    onClick={handleAdd}
-                    className="rounded-xl h-10 gap-2 shadow-sm"
-                >
-                    <Plus className="h-4 w-4" />
-                    Generate Voucher
-                </Button>
+                <div className="flex gap-2">
+                    <Button
+                        variant="outline"
+                        onClick={handleAdd}
+                        className="rounded-xl h-10 gap-2 shadow-sm border-primary/20 text-primary hover:bg-primary/5"
+                    >
+                        <Ticket className="h-4 w-4" />
+                        Auto Generate
+                    </Button>
+                    <Button
+                        onClick={() => setEditing({ id: "", code: "", discount: 0, minTransaction: 0, threshold: 0, stock: 1, isActive: true, expiresAt: null, storeId: "", createdAt: new Date(), updatedAt: new Date(), tier: null, weight: 1 })}
+                        className="rounded-xl h-10 gap-2 shadow-sm"
+                    >
+                        <Plus className="h-4 w-4" />
+                        Tambah Voucher
+                    </Button>
+                </div>
             </div>
 
             {/* Voucher Grid */}

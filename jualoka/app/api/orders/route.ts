@@ -152,41 +152,119 @@ export async function POST(req: Request) {
                 }
             })
 
+            // Record claim if a voucher was used
             if (validVoucher) {
                 await tx.voucher.update({
                     where: { id: validVoucher.id },
                     data: { stock: { decrement: 1 } }
                 })
+
+                // Record the claim to prevent 1x reward usage if it was a reward
+                await tx.rewardClaim.upsert({
+                    where: {
+                        storeId_customerWhatsapp_voucherId: {
+                            storeId,
+                            customerWhatsapp,
+                            voucherId: validVoucher.id
+                        }
+                    },
+                    update: {},
+                    create: {
+                        storeId,
+                        customerWhatsapp,
+                        voucherId: validVoucher.id
+                    }
+                })
             }
 
-            const combinedTotal = historicalTotal + orderTotal
-
-            // Find all eligible reward candidates: 
-            // Vouchers where the threshold (minTransaction) was JUST crossed in this order.
-            const eligibleTemplates = await tx.voucher.findMany({
-                where: {
-                    storeId,
-                    minTransaction: {
-                        gt: historicalTotal,
-                        lte: combinedTotal
-                    },
-                    isActive: true,
-                    stock: { gt: 0 }
-                }
+            // --- REWARD GENERATION LOGIC ---
+            // The user earns a reward if they hit certain thresholds (Tiers)
+            
+            // Re-fetch store for gamification toggle
+            const storeSettings = await tx.store.findUnique({
+                where: { id: storeId },
+                select: { gamificationEnabled: true }
             })
 
             let genVoucher = null
+            
+            // Calculate effective historical total (status selesai)
+            // Note: This order is not yet "selesai", so we only look at past "selesai" orders.
+            // But we want to see if THIS order makes them cross a threshold?
+            // User requested: "track thresold belanja pembeli dari history order tetapi di masukin ke tier"
+            // "misal nya pembeli sudah berbelanja sebanyak 5 juta maka masuk tier s"
+            // This means if (historicalTotal + currentOrderTotal) >= 5jt, they get Tier S.
+            
+            const combinedTotal = historicalTotal + orderTotal
+            
+            if (storeSettings?.gamificationEnabled) {
+                // GAMIFICATION: Based on Tier crossing
+                if (orderTotal >= 10000) { // Anti-spam
+                    const currentTier = import("@/lib/reward-logic").then(m => m.getTierFromTotal(historicalTotal))
+                    const newTier = await import("@/lib/reward-logic").then(m => m.getTierFromTotal(combinedTotal))
+                    
+                    // Wait, I can't use top-level await in transaction easily if I don't import at top.
+                    // I'll just use the logic directly since it's simple.
+                    const { getTierFromTotal, pickWeightedVoucher } = await import("@/lib/reward-logic")
+                    const oldT = getTierFromTotal(historicalTotal)
+                    const newT = getTierFromTotal(combinedTotal)
 
-            if (eligibleTemplates.length > 0) {
-                const randomIndex = Math.floor(Math.random() * eligibleTemplates.length)
-                const rewardTemplate = eligibleTemplates[randomIndex]
+                    // If they entered a NEW tier (or higher tier)
+                    if (newT && (!oldT || newT !== oldT)) {
+                        // Check if they already claimed ANY reward to satisfy "1 reward per pembeli"
+                        const alreadyClaimed = await tx.rewardClaim.findFirst({
+                            where: { storeId, customerWhatsapp }
+                        })
 
-                genVoucher = await tx.voucher.update({
-                    where: { id: rewardTemplate.id },
-                    data: {
-                        stock: { decrement: 1 }
+                        if (!alreadyClaimed) {
+                            const candidates = await tx.voucher.findMany({
+                                where: {
+                                    storeId,
+                                    tier: newT,
+                                    isActive: true,
+                                    stock: { gt: 0 }
+                                }
+                            })
+                            
+                            if (candidates.length > 0) {
+                                genVoucher = pickWeightedVoucher(candidates)
+                                if (genVoucher) {
+                                    await tx.voucher.update({
+                                        where: { id: genVoucher.id },
+                                        data: { stock: { decrement: 1 } }
+                                    })
+                                    // We mark it as "awarded" but maybe not "claimed" until used?
+                                    // "reward juga hanya bisa di claim 1 per pembeli" 
+                                    // If we give it here, it's effectively claimed as their 1 allowed reward.
+                                }
+                            }
+                        }
+                    }
+                }
+            } else {
+                // REGULAR LOGIC: Original crossing logic
+                const eligibleTemplates = await tx.voucher.findMany({
+                    where: {
+                        storeId,
+                        minTransaction: {
+                            gt: historicalTotal,
+                            lte: combinedTotal
+                        },
+                        isActive: true,
+                        stock: { gt: 0 },
+                        tier: null // Only regular vouchers
                     }
                 })
+
+                if (eligibleTemplates.length > 0) {
+                    const randomIndex = Math.floor(Math.random() * eligibleTemplates.length)
+                    const rewardTemplate = eligibleTemplates[randomIndex]
+
+                    genVoucher = await tx.voucher.update({
+                        where: { id: rewardTemplate.id },
+                        data: { stock: { decrement: 1 } }
+                    })
+                }
             }
 
             return { newOrder: createdOrder, generatedVoucher: genVoucher }

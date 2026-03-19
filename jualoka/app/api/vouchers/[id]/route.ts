@@ -11,7 +11,7 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
         if (!store) return NextResponse.json({ message: "Store not found" }, { status: 404 })
 
         const body = await req.json()
-        const { code, discount, minTransaction, stock, isActive, expiresAt } = body
+        const { code, discount, minTransaction, stock, isActive, expiresAt, tier, weight, threshold } = body
 
         // Verify the voucher belongs to this store
         const existing = await prisma.voucher.findUnique({ where: { id } })
@@ -34,6 +34,9 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
         if (stock !== undefined) data.stock = stock
         if (isActive !== undefined) data.isActive = isActive
         if (expiresAt !== undefined) data.expiresAt = expiresAt ? new Date(expiresAt) : null
+        if (tier !== undefined) data.tier = tier
+        if (weight !== undefined) data.weight = weight
+        if (threshold !== undefined) data.threshold = threshold
 
         const voucher = await prisma.voucher.update({
             where: { id },

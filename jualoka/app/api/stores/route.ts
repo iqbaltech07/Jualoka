@@ -68,6 +68,15 @@ export async function PATCH(req: Request) {
             return NextResponse.json({ isOpen: store.isOpen }, { status: 200 })
         }
 
+        if (typeof body.gamificationEnabled === "boolean") {
+            const store = await prisma.store.update({
+                where: { userId },
+                data: { gamificationEnabled: body.gamificationEnabled },
+                select: { gamificationEnabled: true }
+            })
+            return NextResponse.json({ gamificationEnabled: store.gamificationEnabled }, { status: 200 })
+        }
+
         return NextResponse.json({ message: "No valid field to update" }, { status: 400 })
     } catch (error: any) {
         console.error("Store PATCH Error:", error)

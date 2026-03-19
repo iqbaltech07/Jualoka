@@ -33,25 +33,11 @@ export async function POST(req: Request) {
             return NextResponse.json({ message: "Voucher ini sudah kedaluwarsa." }, { status: 400 })
         }
 
-        // Calculate Historical Total for the buyer
-        const pastOrders = await prisma.order.findMany({
-            where: {
-                storeId,
-                customerWhatsapp,
-                customerName
-            },
-            include: {
-                orderItems: true
-            }
-        })
-
-        const historicalTotal = pastOrders.reduce((acc, order) => {
-            return acc + order.orderItems.reduce((sum, item) => sum + (item.price * item.quantity), 0)
-        }, 0)
-
-        if (historicalTotal < voucher.minTransaction) {
-            return NextResponse.json({ 
-                message: `Voucher ini hanya untuk pelanggan dengan total belanja minimal Rp ${voucher.minTransaction.toLocaleString("id-ID")}. Total belanja Anda saat ini: Rp ${historicalTotal.toLocaleString("id-ID")}.` 
+        // Transaction Total Check
+        const currentTotal = parseInt(totalTransaction) || 0
+        if (currentTotal < voucher.minTransaction) {
+            return NextResponse.json({
+                message: `Voucher ini hanya untuk pelanggan dengan total belanja minimal Rp ${voucher.minTransaction.toLocaleString("id-ID")}.`
             }, { status: 400 })
         }
 

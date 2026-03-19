@@ -82,6 +82,7 @@ model Store {
   orders         Order[]
   products       Product[]
   vouchers       Voucher[]
+  gamificationEnabled Boolean @default(false)
   user           User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
@@ -136,4 +137,17 @@ model Voucher {
   store          Store     @relation(fields: [storeId], references: [id], onDelete: Cascade)
   createdAt      DateTime  @default(now())
   updatedAt      DateTime  @updatedAt
+  tier           String?
+  weight         Int       @default(1)
+  threshold      Int       @default(0)
+}
+
+model RewardClaim {
+  id               String   @id @default(cuid())
+  storeId          String
+  customerWhatsapp String
+  voucherId        String
+  createdAt        DateTime @default(now())
+
+  @@unique([storeId, customerWhatsapp, voucherId])
 }

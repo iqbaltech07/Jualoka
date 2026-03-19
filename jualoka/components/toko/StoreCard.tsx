@@ -11,8 +11,24 @@ export type StoreCardData = {
 }
 
 export function StoreCard({ store }: { store: StoreCardData }) {
-    const defaultColor = "from-emerald-400 to-green-600"
-    const bgClass = store.color || defaultColor
+    const defaultColor = "from-[#1a7035] to-[#2ea855]"
+    const color = store.color || defaultColor
+    
+    // Handle custom gradient via inline style if it looks like Tailwind classes
+    let customStyle = {}
+    let bgClass = color
+    
+    if (color.includes("from-[")) {
+        const startMatch = color.match(/from-\[([^\]]+)\]/)
+        const endMatch = color.match(/to-\[([^\]]+)\]/)
+        if (startMatch && endMatch) {
+            customStyle = { backgroundImage: `linear-gradient(to bottom right, ${startMatch[1]}, ${endMatch[1]})` }
+            bgClass = "" // Clear classes so they don't conflict
+        }
+    } else if (!color.startsWith("from-")) {
+        // If it's just a theme name (though app/toko/page.tsx should pass the gradient)
+        bgClass = `from-emerald-400 to-green-600`
+    }
 
     return (
         <Link
@@ -20,7 +36,10 @@ export function StoreCard({ store }: { store: StoreCardData }) {
             className="group relative bg-white rounded-3xl border border-border/60 shadow-sm hover:shadow-2xl hover:shadow-primary/10 transition-all duration-500 hover:-translate-y-1 overflow-hidden flex flex-col"
         >
             {/* Extended Color Banner */}
-            <div className={`h-28 bg-linear-to-br ${bgClass} relative overflow-hidden`}>
+            <div 
+                className={`h-28 bg-linear-to-br ${bgClass} relative overflow-hidden`}
+                style={customStyle}
+            >
                 {/* Decorative Elements */}
                 <div className="absolute -top-10 -right-10 w-32 h-32 bg-white/20 rounded-full blur-2xl transform transition-transform duration-700 group-hover:scale-150 group-hover:translate-x-4" />
                 <div className="absolute -bottom-10 -left-10 w-32 h-32 bg-black/10 rounded-full blur-2xl transform transition-transform duration-700 group-hover:scale-150 group-hover:-translate-x-4" />
@@ -37,7 +56,10 @@ export function StoreCard({ store }: { store: StoreCardData }) {
             <div className="absolute top-16 left-6 z-10 w-full flex items-end justify-between">
                 {/* Prominent Avatar */}
                 <div className="h-20 w-20 rounded-2xl bg-white shadow-lg flex items-center justify-center ring-[6px] ring-white transform transition-transform duration-500 group-hover:-translate-y-1">
-                    <div className={`h-full w-full rounded-xl bg-linear-to-br ${bgClass} flex items-center justify-center text-white font-black text-3xl shadow-inner relative overflow-hidden`}>
+                    <div 
+                        className={`h-full w-full rounded-xl bg-linear-to-br ${bgClass} flex items-center justify-center text-white font-black text-3xl shadow-inner relative overflow-hidden`}
+                        style={customStyle}
+                    >
                         <span className="relative z-10">{store.name.charAt(0).toUpperCase()}</span>
                         <div className="absolute inset-0 bg-black/10" />
                     </div>

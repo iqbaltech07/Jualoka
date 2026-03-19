@@ -23,7 +23,7 @@ export function BannerPreview({ config }: { config: BannerConfig }) {
     const titleLines = (config.title || "").split("\n")
     return (
         <div
-            className={`relative rounded-2xl overflow-hidden ${gradientClass} p-6 sm:p-8 text-white shadow-lg min-h-[140px] flex items-center ${config.layout === "center" ? "justify-center text-center" : "justify-start text-left"}`}
+            className={`relative rounded-2xl overflow-hidden ${gradientClass} p-5 sm:p-8 text-white shadow-lg min-h-[140px] flex items-center ${config.layout === "center" ? "justify-center text-center" : "justify-start text-left"}`}
             style={customStyle}
         >
             {config.imageUrl && (
@@ -42,7 +42,7 @@ export function BannerPreview({ config }: { config: BannerConfig }) {
                         {config.badge}
                     </div>
                 )}
-                <h2 className="text-xl sm:text-2xl font-extrabold tracking-tight leading-tight mb-2">
+                <h2 className="text-xl sm:text-2xl font-extrabold tracking-tight leading-tight mb-2 break-words">
                     {titleLines.map((line, i) => (
                         <span key={i}>
                             {line}
@@ -51,7 +51,7 @@ export function BannerPreview({ config }: { config: BannerConfig }) {
                     ))}
                 </h2>
                 {config.description && (
-                    <p className="text-white/80 text-sm">{config.description}</p>
+                    <p className="text-white/80 text-sm break-words">{config.description}</p>
                 )}
             </div>
         </div>

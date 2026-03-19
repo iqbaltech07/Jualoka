@@ -1,15 +1,17 @@
 "use client"
 
 import { useState } from "react"
-import { Store, Image } from "lucide-react"
+import { Store, Image, Gift } from "lucide-react"
 import { BannerTab } from "@/components/admin/settings/BannerTab"
 import { StoreInfoTab } from "@/components/admin/settings/StoreInfoTab"
+import { VoucherRewardTab } from "@/components/admin/settings/VoucherRewardTab"
 
-type Tab = "info" | "banner"
+type Tab = "info" | "banner" | "reward"
 
 const TABS: { id: Tab; label: string; icon: React.ComponentType<{ className?: string }> }[] = [
     { id: "info", label: "Informasi Toko", icon: Store },
     { id: "banner", label: "Kustomisasi Banner", icon: Image },
+    { id: "reward", label: "Voucher Reward", icon: Gift },
 ]
 
 export default function StoreSettingsPage() {
@@ -39,7 +41,7 @@ export default function StoreSettingsPage() {
             </div>
 
             {/* Tab content */}
-            {activeTab === "info" ? <StoreInfoTab /> : <BannerTab />}
+            {activeTab === "info" ? <StoreInfoTab /> : activeTab === "banner" ? <BannerTab /> : <VoucherRewardTab />}
         </div>
     )
 }
