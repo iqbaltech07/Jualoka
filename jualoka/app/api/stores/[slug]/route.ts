@@ -33,7 +33,21 @@ export async function GET(_req: Request, { params }: { params: Promise<{ slug: s
                         price: true,
                         description: true,
                         image: true,
-                        stock: true, // Needed for stock limit enforcement on frontend
+                        stock: true,
+                    }
+                },
+                _count: {
+                    select: {
+                        vouchers: {
+                            where: {
+                                isActive: true,
+                                stock: { gt: 0 },
+                                OR: [
+                                    { expiresAt: null },
+                                    { expiresAt: { gt: new Date() } }
+                                ]
+                            }
+                        }
                     }
                 }
             }

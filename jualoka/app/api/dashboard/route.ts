@@ -14,7 +14,8 @@ export async function GET(req: Request) {
         const storeId = store.id
         const now = new Date()
         const sevenDaysAgo = new Date(now)
-        sevenDaysAgo.setDate(now.getDate() - 7)
+        sevenDaysAgo.setDate(now.getDate() - 6)
+        sevenDaysAgo.setHours(0, 0, 0, 0)
 
         // Run all aggregations in parallel
         const [
@@ -32,12 +33,26 @@ export async function GET(req: Request) {
                 where: { storeId },
                 orderBy: { createdAt: "desc" },
                 take: 4,
-                include: {
-                    orderItems: { include: { product: { select: { name: true } } } }
+                select: {
+                    id: true,
+                    customerName: true,
+                    customerWhatsapp: true,
+                    status: true,
+                    createdAt: true,
+                    discountAmount: true,
+                    orderItems: {
+                        select: {
+                            id: true,
+                            price: true,
+                            quantity: true,
+                            product: { select: { name: true } }
+                        }
+                    }
                 }
             }),
-            prisma.orderItem.findMany({
-                where: { order: { storeId, status: "selesai" } },
+            prisma.order.findMany({
+                where: { storeId, status: "selesai" },
+                select: { discountAmount: true, orderItems: { select: { price: true, quantity: true } } }
             }),
             // Sales history for last 7 days
             prisma.order.findMany({
@@ -48,6 +63,7 @@ export async function GET(req: Request) {
                 },
                 select: {
                     createdAt: true,
+                    discountAmount: true,
                     orderItems: { select: { price: true, quantity: true } }
                 }
             })
@@ -102,16 +118,20 @@ export async function GET(req: Request) {
                 new Date(o.createdAt).toDateString() === d.toDateString()
             )
 
-            const revenue = dayOrders.reduce((sum, order) =>
-                sum + order.orderItems.reduce((s: number, item: any) => s + (item.price * item.quantity), 0), 0
-            )
+            const revenue = dayOrders.reduce((sum: number, order: any) => {
+                const subtotal = order.orderItems.reduce((s: number, item: any) => s + (item.price * item.quantity), 0)
+                return sum + Math.max(0, subtotal - (order.discountAmount || 0))
+            }, 0)
 
             return { day: dayLabel, revenue, orders: dayOrders.length }
         })
 
-        // Calculate total revenue from completed orders
+        // Calculate total revenue from completed orders (Net Revenue)
         const totalRevenue = (completedOrderItems as any[]).reduce(
-            (sum, item) => sum + item.price * item.quantity,
+            (sum, order) => {
+                const subtotal = order.orderItems.reduce((s: number, item: any) => s + (item.price * item.quantity), 0)
+                return sum + Math.max(0, subtotal - (order.discountAmount || 0))
+            },
             0
         )
 
@@ -122,7 +142,7 @@ export async function GET(req: Request) {
             customerWhatsapp: order.customerWhatsapp,
             status: order.status,
             createdAt: order.createdAt,
-            total: order.orderItems.reduce((s: number, i: any) => s + i.price * i.quantity, 0),
+            total: Math.max(0, order.orderItems.reduce((s: number, i: any) => s + i.price * i.quantity, 0) - (order.discountAmount || 0)),
             itemCount: order.orderItems.length,
         }))
 

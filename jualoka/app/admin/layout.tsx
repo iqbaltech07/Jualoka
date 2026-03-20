@@ -13,10 +13,10 @@ import { toast } from "sonner"
 const navLinks = [
     { href: "/admin", label: "Dashboard", icon: LayoutDashboard },
     { href: "/admin/analysis", label: "Analisis", icon: BarChart },
-    { href: "/admin/products", label: "Products", icon: Package },
-    { href: "/admin/orders", label: "Orders", icon: ShoppingCart },
-    { href: "/admin/vouchers", label: "Vouchers", icon: Ticket },
-    { href: "/admin/settings", label: "Store Settings", icon: Settings },
+    { href: "/admin/products", label: "Produk", icon: Package },
+    { href: "/admin/orders", label: "Pesanan", icon: ShoppingCart },
+    { href: "/admin/vouchers", label: "Voucher", icon: Ticket },
+    { href: "/admin/settings", label: "Pengaturan Toko", icon: Settings },
 ]
 
 function SidebarNav({ onClose }: { onClose?: () => void }) {

@@ -82,8 +82,6 @@ export interface ProductForStatus {
     createdAt?: Date | string | null
 }
 
-const NEW_PRODUCT_DAYS_THRESHOLD = 7
-
 /**
  * Determines a product's performance status.
  *
@@ -125,7 +123,6 @@ export function getProductStatus(
 
     if (allProducts.length === 0) return "Tidak Layak"
 
-    // Rank by units sold (descending); lower index = higher sales
     const sortedBySold = [...allProducts].sort((a, b) => (b.sold ?? 0) - (a.sold ?? 0))
     const index = sortedBySold.findIndex((p) => p.sold === product.sold)
     const percentile = index / allProducts.length

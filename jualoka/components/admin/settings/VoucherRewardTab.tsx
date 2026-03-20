@@ -73,8 +73,8 @@ export function VoucherRewardTab() {
     return (
         <div className="flex flex-col gap-6">
             <Card className="border-0 shadow-sm bg-white overflow-hidden">
-                <CardHeader className="px-6 pt-6 pb-4 border-b border-border/50 bg-linear-to-r from-primary/5 to-transparent">
-                    <div className="flex items-center justify-between">
+                <CardHeader className="px-4 sm:px-6 pt-6 pb-4 border-b border-border/50 bg-linear-to-r from-primary/5 to-transparent">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                         <div className="space-y-1">
                             <CardTitle className="text-base flex items-center gap-2">
                                 <Gift className="h-4 w-4 text-primary" />
@@ -91,7 +91,7 @@ export function VoucherRewardTab() {
                         />
                     </div>
                 </CardHeader>
-                <CardContent className="p-6">
+                <CardContent className="p-4 sm:p-6">
                     <div className="grid gap-6 sm:grid-cols-2">
                         {/* Status Card */}
                         <div className={`p-4 rounded-2xl border transition-colors ${gamificationEnabled ? "bg-primary/5 border-primary/20" : "bg-muted/30 border-border/50"}`}>

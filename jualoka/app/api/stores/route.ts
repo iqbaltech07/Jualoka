@@ -136,8 +136,8 @@ export async function DELETE(req: Request) {
             }
         }
 
-        // 1. Delete the store from the database (Cascades will delete products & orders in DB)
-        await prisma.store.delete({ where: { id: store.id } })
+        // 1. Delete the user from the database (Cascades will delete store, products & orders in DB)
+        await prisma.user.delete({ where: { id: userId } })
 
         // 2. Delete all files from Vercel Blob concurrently
         if (blobUrlsToDelete.length > 0) {

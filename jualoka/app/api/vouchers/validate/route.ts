@@ -4,7 +4,7 @@ import { prisma } from "@/lib/prisma"
 export async function POST(req: Request) {
     try {
         const body = await req.json()
-        const { storeId, code, totalTransaction, customerName, customerWhatsapp } = body
+        const { storeId, code, totalTransaction, customerWhatsapp } = body
 
         if (!storeId || !code) {
             return NextResponse.json({ message: "Store ID and Voucher Code are required" }, { status: 400 })
@@ -16,6 +16,18 @@ export async function POST(req: Request) {
                 code: code.toUpperCase()
             }
         })
+
+        const claim = await prisma.rewardClaim.findFirst({
+            where: {
+                storeId,
+                customerWhatsapp,
+                voucherId: voucher?.id,
+            }
+        })
+
+        if (claim && claim.isUsed) {
+            return NextResponse.json({ message: "Voucher ini sudah pernah kamu gunakan sebelumnya." }, { status: 400 })
+        }
 
         if (!voucher) {
             return NextResponse.json({ message: "Kode voucher tidak ditemukan." }, { status: 404 })
@@ -37,7 +49,7 @@ export async function POST(req: Request) {
         const currentTotal = parseInt(totalTransaction) || 0
         if (currentTotal < voucher.minTransaction) {
             return NextResponse.json({
-                message: `Voucher ini hanya untuk pelanggan dengan total belanja minimal Rp ${voucher.minTransaction.toLocaleString("id-ID")}.`
+                message: `Voucher ini hanya bisa digunakan dengan total belanja minimal Rp ${voucher.minTransaction.toLocaleString("id-ID")}.`
             }, { status: 400 })
         }
 

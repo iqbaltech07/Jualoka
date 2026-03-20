@@ -25,9 +25,9 @@ export default function FeaturesSection() {
                 {/* Grid */}
                 <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
                     {FEATURES.map((feature, i) => (
-                        <MotionWrapper key={feature.title} delay={i * 0.08}>
+                        <MotionWrapper key={feature.title} delay={i * 0.08} className="h-full">
                             <div
-                                className={`bg-white rounded-2xl p-6 border ${feature.border} hover:shadow-lg transition-all duration-300 hover:-translate-y-1`}
+                                className={`bg-white rounded-2xl p-6 border ${feature.border} hover:shadow-lg transition-all duration-300 hover:-translate-y-1 h-full`}
                             >
                                 <div className={`inline-flex p-3 rounded-xl ${feature.color} mb-4`}>
                                     <feature.icon className="h-5 w-5" />

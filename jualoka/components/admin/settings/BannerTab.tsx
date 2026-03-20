@@ -175,7 +175,7 @@ export function BannerTab() {
                     <button
                         type="button"
                         onClick={() => setShowPreview((p) => !p)}
-                        className="flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-foreground bg-white border border-border/60 rounded-xl px-3 py-2 transition-all hover:shadow-sm"
+                        className="flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-foreground bg-white border border-border/60 rounded-xl px-3 py-2 transition-all hover:shadow-sm shrink-0 whitespace-nowrap"
                     >
                         <Eye className="h-3.5 w-3.5" />
                         {showPreview ? "Sembunyikan" : "Tampilkan"} Preview
@@ -183,7 +183,7 @@ export function BannerTab() {
                     <button
                         type="button"
                         onClick={handleReset}
-                        className="flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-foreground bg-white border border-border/60 rounded-xl px-3 py-2 transition-all hover:shadow-sm"
+                        className="flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-foreground bg-white border border-border/60 rounded-xl px-3 py-2 transition-all hover:shadow-sm shrink-0 whitespace-nowrap"
                     >
                         <RotateCcw className="h-3.5 w-3.5" />
                         Reset
@@ -192,7 +192,7 @@ export function BannerTab() {
                         type="button"
                         onClick={handleSave}
                         disabled={isSaving}
-                        className="flex items-center gap-2 text-sm font-semibold text-white bg-primary hover:bg-primary/90 rounded-xl px-4 py-2 shadow-sm hover:shadow-md transition-all active:scale-95 disabled:opacity-70"
+                        className="flex items-center gap-2 text-sm font-semibold text-white bg-primary hover:bg-primary/90 rounded-xl px-4 py-2 shadow-sm hover:shadow-md transition-all active:scale-95 disabled:opacity-70 shrink-0 whitespace-nowrap"
                     >
                         <Save className="h-3.5 w-3.5" />
                         {isSaving ? "Menyimpan..." : "Simpan"}
@@ -241,12 +241,12 @@ export function BannerTab() {
             <div className="grid lg:grid-cols-2 gap-4" style={{ opacity: isLoading ? 0.5 : 1, pointerEvents: isLoading ? 'none' : 'auto' }}>
                 {/* Content */}
                 <Card className="border-0 shadow-sm bg-white">
-                    <CardHeader className="px-5 pt-5 pb-3">
+                    <CardHeader className="px-4 sm:px-5 pt-5 pb-3">
                         <CardTitle className="text-sm font-semibold flex items-center gap-2">
                             <Type className="h-4 w-4 text-primary" /> Konten Banner
                         </CardTitle>
                     </CardHeader>
-                    <CardContent className="px-5 pb-5 flex flex-col gap-4">
+                    <CardContent className="px-4 sm:px-5 pb-5 flex flex-col gap-4">
                         <div className="flex flex-col gap-1.5">
                             <label className="text-xs font-semibold text-foreground/80">Teks Badge (opsional)</label>
                             <input type="text" className={INPUT} placeholder="Toko Online Resmi" value={config.badge} onChange={(e) => patch("badge", e.target.value)} maxLength={40} />
@@ -266,12 +266,12 @@ export function BannerTab() {
                 {/* Design */}
                 <div className="flex flex-col gap-4">
                     <Card className="border-0 shadow-sm bg-white">
-                        <CardHeader className="px-5 pt-5 pb-3">
+                        <CardHeader className="px-4 sm:px-5 pt-5 pb-3">
                             <CardTitle className="text-sm font-semibold flex items-center gap-2">
                                 <Palette className="h-4 w-4 text-primary" /> Tema Warna
                             </CardTitle>
                         </CardHeader>
-                        <CardContent className="px-5 pb-5 flex flex-col gap-3">
+                        <CardContent className="px-4 sm:px-5 pb-5 flex flex-col gap-3">
                             <ThemePicker value={config.theme} onChange={(t) => patch("theme", t)} />
                             {config.theme === "custom" && (
                                 <div className="flex flex-col gap-1.5">
@@ -341,12 +341,12 @@ export function BannerTab() {
                     </Card>
 
                     <Card className="border-0 shadow-sm bg-white">
-                        <CardHeader className="px-5 pt-5 pb-3">
+                        <CardHeader className="px-4 sm:px-5 pt-5 pb-3">
                             <CardTitle className="text-sm font-semibold flex items-center gap-2">
                                 <Layout className="h-4 w-4 text-primary" /> Tata Letak
                             </CardTitle>
                         </CardHeader>
-                        <CardContent className="px-5 pb-5">
+                        <CardContent className="px-4 sm:px-5 pb-5">
                             <div className="flex gap-2">
                                 {(["left", "center"] as BannerLayoutType[]).map((l) => (
                                     <button
@@ -366,12 +366,12 @@ export function BannerTab() {
 
             {/* Image Upload */}
             <Card className="border-0 shadow-sm bg-white" style={{ opacity: isLoading ? 0.5 : 1, pointerEvents: isLoading ? 'none' : 'auto' }}>
-                <CardHeader className="px-5 pt-5 pb-3">
+                <CardHeader className="px-4 sm:px-5 pt-5 pb-3">
                     <CardTitle className="text-sm font-semibold flex items-center gap-2">
                         <ImageIcon className="h-4 w-4 text-primary" /> Gambar Latar (Opsional)
                     </CardTitle>
                 </CardHeader>
-                <CardContent className="px-5 pb-5">
+                <CardContent className="px-4 sm:px-5 pb-5">
                     <div className="grid sm:grid-cols-2 gap-6">
                         <div className="flex flex-col gap-2">
                             <label className="text-xs font-semibold text-foreground/80">Pilih Foto Banner</label>

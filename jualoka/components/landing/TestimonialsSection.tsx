@@ -25,9 +25,9 @@ export default function TestimonialsSection() {
                 {/* Cards */}
                 <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
                     {TESTIMONIALS.map((t, i) => (
-                        <MotionWrapper key={t.name} delay={i * 0.08}>
+                        <MotionWrapper key={t.name} delay={i * 0.08} className="h-full">
                             <div
-                                className="bg-white rounded-2xl p-6 border border-border/50 shadow-sm hover:shadow-lg transition-all duration-300"
+                                className="bg-white rounded-2xl p-6 border border-border/50 shadow-sm hover:shadow-lg transition-all duration-300 h-full flex flex-col"
                             >
                                 {/* Star rating */}
                                 <div className="flex gap-0.5 mb-4">
@@ -42,7 +42,7 @@ export default function TestimonialsSection() {
                                 </p>
 
                                 {/* Author */}
-                                <div className="flex items-center gap-3">
+                                <div className="flex items-center gap-3 mt-auto">
                                     <div className={`h-10 w-10 rounded-full bg-gradient-to-br ${t.color} flex items-center justify-center text-white font-bold text-sm shrink-0`}>
                                         {t.avatar}
                                     </div>

@@ -20,7 +20,8 @@ export async function GET(req: Request) {
 
         const now = new Date()
         const startDate = new Date(now)
-        startDate.setDate(now.getDate() - days)
+        startDate.setDate(now.getDate() - (days - 1))
+        startDate.setHours(0, 0, 0, 0)
 
         const prevStartDate = new Date(startDate)
         prevStartDate.setDate(startDate.getDate() - days)
@@ -32,7 +33,14 @@ export async function GET(req: Request) {
                 status: "selesai",
                 createdAt: { gte: startDate }
             },
-            include: { orderItems: true }
+            select: {
+                id: true,
+                createdAt: true,
+                discountAmount: true,
+                customerName: true,
+                customerWhatsapp: true,
+                orderItems: true
+            }
         })
 
         const previousOrders = await prisma.order.findMany({
@@ -41,11 +49,21 @@ export async function GET(req: Request) {
                 status: "selesai",
                 createdAt: { gte: prevStartDate, lt: startDate }
             },
-            include: { orderItems: true }
+            select: {
+                id: true,
+                createdAt: true,
+                discountAmount: true,
+                customerName: true,
+                customerWhatsapp: true,
+                orderItems: true
+            }
         })
 
         const calculateRevenue = (orders: any[]) =>
-            orders.reduce((sum, order) => sum + order.orderItems.reduce((s: number, item: any) => s + (item.price * item.quantity), 0), 0)
+            orders.reduce((sum, order) => {
+                const subtotal = order.orderItems.reduce((s: number, item: any) => s + (item.price * item.quantity), 0)
+                return sum + Math.max(0, subtotal - (order.discountAmount || 0))
+            }, 0)
         const calculateVolume = (orders: any[]) =>
             orders.reduce((sum, order) => sum + order.orderItems.reduce((s: number, item: any) => s + item.quantity, 0), 0)
 
@@ -135,9 +153,9 @@ export async function GET(req: Request) {
 
         const salesTrend = []
         if (days === 7 || days === 30) {
-            for (let i = days - 1; i >= 0; i--) {
-                const d = new Date(now)
-                d.setDate(d.getDate() - i)
+            for (let i = 0; i < days; i++) {
+                const d = new Date(startDate)
+                d.setDate(startDate.getDate() + i)
                 d.setHours(0, 0, 0, 0)
                 const nextD = new Date(d)
                 nextD.setDate(d.getDate() + 1)
@@ -154,15 +172,25 @@ export async function GET(req: Request) {
                 })
             }
         } else {
+            // 90d: Group by 6-day intervals
             const interval = 6
-            for (let i = 14; i >= 0; i--) {
-                const d = new Date(now)
-                d.setDate(d.getDate() - (i * interval))
+            for (let i = 0; i < 15; i++) {
+                const d = new Date(startDate)
+                d.setDate(startDate.getDate() + (i * interval))
+                d.setHours(0, 0, 0, 0)
+                
+                const nextD = new Date(d)
+                nextD.setDate(d.getDate() + interval)
+
+                const bucketOrders = currentOrders.filter(o => {
+                    const od = new Date(o.createdAt)
+                    return od >= d && od < nextD
+                })
 
                 salesTrend.push({
                     date: d.toLocaleDateString("id-ID", { day: "numeric", month: "short" }),
-                    revenue: Math.round(currentRevenue / 15), // Placeholder simplification for 90d to prevent loop complex
-                    orders: Math.round(totalOrders / 15)
+                    revenue: calculateRevenue(bucketOrders),
+                    orders: bucketOrders.length
                 })
             }
         }

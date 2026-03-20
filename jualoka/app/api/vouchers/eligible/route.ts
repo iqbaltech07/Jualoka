@@ -7,7 +7,6 @@ export async function GET(req: Request) {
         const url = new URL(req.url)
         const storeId = url.searchParams.get("storeId")
         const wa = url.searchParams.get("wa")
-        const name = url.searchParams.get("name")
         const totalRaw = url.searchParams.get("total")
 
         if (!storeId || !totalRaw) {
@@ -53,7 +52,7 @@ export async function GET(req: Request) {
 
         if (store.gamificationEnabled) {
             // GAMIFICATION MODE: Tier-based + Weighted Random
-            
+
             // Anti-spam check
             if (currentOrderTotal < ANTI_SPAM_MIN_TOTAL) {
                 return NextResponse.json({ voucher: null, reason: "anti-spam" }, { status: 200 })

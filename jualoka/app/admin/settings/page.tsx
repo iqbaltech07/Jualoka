@@ -18,7 +18,7 @@ export default function StoreSettingsPage() {
     const [activeTab, setActiveTab] = useState<Tab>("info")
 
     return (
-        <div className="flex flex-col gap-6 ">
+        <div className="flex flex-col gap-6">
             {/* Header */}
             <div>
                 <h1 className="text-2xl font-bold tracking-tight">Pengaturan Toko</h1>
@@ -26,13 +26,13 @@ export default function StoreSettingsPage() {
             </div>
 
             {/* Tabs */}
-            <div className="flex gap-1 bg-muted/60 rounded-2xl p-1 w-fit">
+            <div className="flex gap-1 bg-muted/60 rounded-2xl p-1 w-full flex-wrap justify-center sm:w-fit scrollbar-none">
                 {TABS.map(({ id, label, icon: Icon }) => (
                     <button
                         key={id}
                         type="button"
                         onClick={() => setActiveTab(id)}
-                        className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-all duration-200 ${activeTab === id ? "bg-white text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}
+                        className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-all duration-200 shrink-0 whitespace-nowrap ${activeTab === id ? "bg-white text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}
                     >
                         <Icon className="h-4 w-4" />
                         {label}

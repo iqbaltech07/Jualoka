@@ -185,7 +185,7 @@ export function VoucherEditModal({
                         <Input
                             id="edit-expires"
                             type="datetime-local"
-                            className="h-10 rounded-xl text-sm"
+                            className="h-10 rounded-xl text-sm w-fit"
                             value={expiresAt}
                             onChange={(e) => setExpiresAt(e.target.value)}
                             min={new Date().toISOString().slice(0, 16)}
