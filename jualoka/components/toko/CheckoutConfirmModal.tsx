@@ -4,7 +4,6 @@ import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import { ShoppingBag } from "lucide-react"
 import { clearCart, getCart } from "@/lib/cartApi"
-import Swal from "sweetalert2"
 
 export function CheckoutConfirmModal({ slug, storeId }: { slug: string; storeId: string }) {
     const router = useRouter()
@@ -22,6 +21,7 @@ export function CheckoutConfirmModal({ slug, storeId }: { slug: string; storeId:
     }, [storeId])
 
     async function handleClick() {
+        const Swal = (await import("sweetalert2")).default
         const result = await Swal.fire({
             title: "Lanjutkan Transaksi?",
             text: "Kamu masih punya produk di keranjang. Lanjutkan ke checkout atau batalkan pemesanan?",

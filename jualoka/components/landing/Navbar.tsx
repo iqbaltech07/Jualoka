@@ -33,9 +33,9 @@ export default function Navbar() {
                 {/* Nav links desktop */}
                 <div className="hidden md:flex items-center gap-8 text-sm font-medium text-muted-foreground">
                     {NAV_LINKS.map((link) => (
-                        <a key={link.href} href={link.href} className="hover:text-foreground transition-colors">
+                        <Link key={link.href} href={link.href} className="hover:text-foreground transition-colors">
                             {link.label}
-                        </a>
+                        </Link>
                     ))}
                 </div>
 
@@ -71,14 +71,14 @@ export default function Navbar() {
             {isOpen && (
                 <div className="md:hidden bg-white/80 backdrop-blur-md border-t border-black/5 px-5 py-4 flex flex-col gap-3">
                     {NAV_LINKS.map((link) => (
-                    <a    
-                        key = { link.href }
-                        href = { link.href }
-                        onClick = {() => setIsOpen(false)}
-                    className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors py-2"
->
-                    {link.label}
-                </a>
+                    <Link    
+                        key={link.href}
+                        href={link.href}
+                        onClick={() => setIsOpen(false)}
+                        className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors py-2"
+                    >
+                        {link.label}
+                    </Link>
             ))}
             <div className="border-t border-border/50 pt-3 flex flex-col gap-2">
                 <Link

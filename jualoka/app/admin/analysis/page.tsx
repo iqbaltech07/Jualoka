@@ -8,7 +8,18 @@ import { toast } from "sonner"
 // New Components
 import { AiInsightCard } from "@/components/admin/analysis/AiInsightCard"
 import { BusinessOverview } from "@/components/admin/analysis/BusinessOverview"
-import { RevenueTrendCard } from "@/components/admin/analysis/RevenueTrendCard"
+import dynamic from "next/dynamic"
+
+const RevenueTrendCard = dynamic(
+    () => import("@/components/admin/analysis/RevenueTrendCard").then((mod) => mod.RevenueTrendCard),
+    { 
+        loading: () => (
+            <div className="h-[400px] w-full bg-zinc-50 border border-zinc-100 rounded-3xl flex items-center justify-center">
+                <Loader2 className="h-6 w-6 animate-spin text-zinc-300" />
+            </div>
+        )
+    }
+)
 import { CustomerInsightCard } from "@/components/admin/analysis/CustomerInsightCard"
 import { SalesPerformanceCard } from "@/components/admin/analysis/SalesPerformanceCard"
 import { ProductAnalysisDeepDive } from "@/components/admin/analysis/ProductAnalysisDeepDive"
