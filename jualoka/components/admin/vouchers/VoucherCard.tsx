@@ -108,7 +108,7 @@ export function VoucherCard({
                 <div className="flex items-center gap-2 pt-1">
                     <button
                         onClick={() => onEdit(voucher)}
-                        className="flex-1 flex items-center justify-center gap-2 h-9 rounded-xl text-sm font-semibold bg-primary/5 text-primary hover:bg-primary/10 transition-all active:scale-[0.98]"
+                        className="flex-1 flex items-center justify-center gap-2 h-9 rounded-xl text-sm font-semibold bg-white text-foreground border border-border shadow-xs hover:bg-muted/50 transition-all active:scale-[0.98]"
                     >
                         <Pencil className="h-3.5 w-3.5" />
                         Edit

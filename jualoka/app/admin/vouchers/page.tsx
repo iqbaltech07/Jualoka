@@ -6,7 +6,6 @@ import { Button } from "@/components/ui/button"
 import { VoucherCard } from "@/components/admin/vouchers/VoucherCard"
 import { VoucherEditModal } from "@/components/admin/vouchers/VoucherEditModal"
 import { Voucher } from "@/lib/voucherStore"
-import Swal from "sweetalert2"
 
 export default function VouchersPage() {
     const [vouchers, setVouchers] = useState<Voucher[]>([])
@@ -77,6 +76,7 @@ export default function VouchersPage() {
     }
 
     async function handleDelete(id: string) {
+        const Swal = (await import("sweetalert2")).default
         const result = await Swal.fire({
             title: "Hapus voucher?",
             text: "Data yang dihapus tidak dapat dikembalikan!",

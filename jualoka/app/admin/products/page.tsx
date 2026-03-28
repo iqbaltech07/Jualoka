@@ -19,7 +19,6 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { toast } from "sonner"
 import { PRODUCT_STATUS_CONFIG, PRODUCT_STATUS_FALLBACK, getProductStatus } from "@/lib/productStatus"
-import Swal from "sweetalert2"
 
 type Product = {
     id: string
@@ -161,6 +160,7 @@ export default function ProductsPage() {
     useEffect(() => { fetchProducts() }, [])
 
     async function handleDelete(id: string, name: string) {
+        const Swal = (await import("sweetalert2")).default
         const result = await Swal.fire({
             title: "Hapus Produk?",
             text: `Anda yakin ingin menghapus produk "${name}"?`,

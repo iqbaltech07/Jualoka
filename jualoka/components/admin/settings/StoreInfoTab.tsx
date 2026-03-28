@@ -8,7 +8,6 @@ import { Label } from "@/components/ui/label"
 import { Button } from "@/components/ui/button"
 import { toast } from "sonner"
 import { STORE_CATEGORIES, type StoreCategory } from "@/lib/categories"
-import Swal from "sweetalert2"
 
 import { useRouter } from "next/navigation"
 import { authClient } from "@/lib/auth-client"
@@ -78,6 +77,7 @@ export function StoreInfoTab() {
     }
 
     async function handleStoreDelete() {
+        const Swal = (await import("sweetalert2")).default
         const result = await Swal.fire({
             title: "Hapus Toko?",
             text: "Beneran mau menghapus toko ini? Semua produk, pesanan, dan gambar akan ikut terhapus dari sistem dan tidak bisa dikembalikan.",
